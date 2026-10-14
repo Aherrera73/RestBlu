@@ -1,0 +1,11 @@
+name = "restblu-pagos"
+main = "src/index.js"
+compatibility_date = "2026-05-01"
+
+# Ambiente de integración de Transbank (credenciales públicas de prueba).
+# Para producción se reemplazan por las del comercio con `wrangler secret put`.
+[vars]
+TRANSBANK_API_BASE = "https://webpay3gint.transbank.cl"
+TRANSBANK_COMMERCE_CODE = "597055555532"
+ALLOWED_RETURN_ORIGINS = "http://localhost:3000,http://127.0.0.1:3000,https://restblu.web.app,https://restblu.firebaseapp.com,https://lumastay-bab6a.web.app"
+DEFAULT_RETURN = "https://restblu.web.app/"

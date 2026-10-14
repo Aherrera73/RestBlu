@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "lumastay-bab6a"
+  },
+  "targets": {
+    "lumastay-bab6a": {
+      "hosting": {
+        "restblu": ["restblu"]
+      }
+    }
+  }
+}

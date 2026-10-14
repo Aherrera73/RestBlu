@@ -1,0 +1,367 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /public_properties/{propertyId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    // Cuenta RestBlu: correo y contraseña con el correo verificado. Una sesión
+    // anónima no tiene correo en el token y no puede reservar.
+    function verifiedAccount() {
+      return request.auth != null &&
+        request.auth.token.email is string &&
+        request.auth.token.email_verified == true;
+    }
+
+    // Un RUT pertenece a la primera cuenta que lo registra: el documento
+    // rut_index/{RUT sin puntos ni guion} guarda su uid y nadie más puede crearlo.
+    function rutKey(documentId) {
+      return documentId.replace('[^0-9kK]', '').upper();
+    }
+
+    match /rut_index/{rut} {
+      allow get: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if
+        request.auth != null &&
+        request.auth.token.email is string &&
+        rut.matches('^[0-9]{7,8}[0-9K]$') &&
+        request.resource.data.keys().hasOnly(['uid', 'createdAt']) &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.createdAt is string;
+      // Se libera al cambiar el RUT antes de tener reservas confirmadas.
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow list, update: if false;
+    }
+
+    // Código de 6 dígitos para verificar el correo: la cuenta pide un código
+    // (send) o lo envía para comprobarlo (verify); el gestor responde.
+    match /account_verification_requests/{requestId} {
+      allow create: if
+        request.auth != null &&
+        request.auth.token.email is string &&
+        requestId.matches('^[a-f0-9-]{36}$') &&
+        request.resource.data.keys().hasOnly(['action', 'code', 'ownerUid', 'syncStatus', 'createdAt']) &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.syncStatus == 'pending' &&
+        request.resource.data.action in ['send', 'verify'] &&
+        request.resource.data.code is string &&
+        (request.resource.data.action == 'send' || request.resource.data.code.matches('^[0-9]{6}$')) &&
+        request.resource.data.createdAt is string;
+      allow get: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+      allow list, update, delete: if false;
+    }
+
+    match /customer_profiles/{uid} {
+      allow get: if request.auth != null && request.auth.uid == uid;
+      // El perfil (con el RUT) se guarda al registrarse, antes de verificar el
+      // correo; reservar sigue exigiendo la cuenta verificada.
+      allow create, update: if
+        request.auth != null &&
+        request.auth.token.email is string &&
+        request.auth.uid == uid &&
+        request.resource.data.keys().hasOnly([
+          'name', 'documentId', 'phone', 'birthDate', 'nationality',
+          'emergencyContactName', 'emergencyContactPhone', 'favorites', 'updatedAt'
+        ]) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() <= 120 &&
+        request.resource.data.documentId is string &&
+        request.resource.data.documentId.size() <= 12 &&
+        request.resource.data.phone is string &&
+        request.resource.data.phone.size() <= 30 &&
+        (!('birthDate' in request.resource.data) || (request.resource.data.birthDate is string && request.resource.data.birthDate.size() <= 10)) &&
+        (!('nationality' in request.resource.data) || (request.resource.data.nationality is string && request.resource.data.nationality.size() <= 60)) &&
+        (!('emergencyContactName' in request.resource.data) || (request.resource.data.emergencyContactName is string && request.resource.data.emergencyContactName.size() <= 120)) &&
+        (!('emergencyContactPhone' in request.resource.data) || (request.resource.data.emergencyContactPhone is string && request.resource.data.emergencyContactPhone.size() <= 30)) &&
+        (!('favorites' in request.resource.data) || (request.resource.data.favorites is list && request.resource.data.favorites.size() <= 100)) &&
+        request.resource.data.updatedAt is string &&
+        exists(/databases/$(database)/documents/rut_index/$(rutKey(request.resource.data.documentId))) &&
+        get(/databases/$(database)/documents/rut_index/$(rutKey(request.resource.data.documentId))).data.uid == request.auth.uid;
+      // El cliente puede eliminar su cuenta y sus datos.
+      allow delete: if request.auth != null && request.auth.uid == uid;
+      allow list: if false;
+    }
+
+    match /reservation_intake/{reservationId} {
+      allow create: if
+        verifiedAccount() &&
+        request.resource.data.email == request.auth.token.email &&
+        reservationId.matches('^(LS|RB)-[A-Z0-9-]{10,50}$') &&
+        request.resource.data.keys().hasOnly([
+          'id', 'guestName', 'documentId', 'email', 'phone',
+          'propertyId', 'propertyName', 'propertyPlace',
+          'checkIn', 'checkOut', 'guests', 'nights',
+          'nightlyPrice', 'total', 'accessPin', 'paymentDemoCard', 'syncStatus',
+          'source', 'schemaVersion', 'createdAt', 'ownerUid'
+        ]) &&
+        (request.resource.data.schemaVersion != 2 ||
+          request.resource.data.keys().hasAll(['paymentDemoCard'])) &&
+        request.resource.data.id == reservationId &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.syncStatus == 'pending' &&
+        request.resource.data.source in ['firebase-hosting', 'android-app'] &&
+        request.resource.data.schemaVersion in [1, 2, 3] &&
+        request.resource.data.guestName is string &&
+        request.resource.data.guestName.size() >= 2 &&
+        request.resource.data.guestName.size() <= 120 &&
+        request.resource.data.documentId is string &&
+        request.resource.data.documentId.size() <= 20 &&
+        request.resource.data.email is string &&
+        request.resource.data.email.matches('^[^@ ]+@[^@ ]+\\.[^@ ]+$') &&
+        request.resource.data.email.size() <= 160 &&
+        request.resource.data.phone is string &&
+        request.resource.data.phone.size() <= 30 &&
+        request.resource.data.propertyId is int &&
+        request.resource.data.propertyId > 0 &&
+        request.resource.data.propertyName is string &&
+        request.resource.data.propertyName.size() <= 120 &&
+        request.resource.data.propertyPlace is string &&
+        request.resource.data.propertyPlace.size() <= 160 &&
+        request.resource.data.checkIn is string &&
+        request.resource.data.checkOut is string &&
+        request.resource.data.guests is int &&
+        request.resource.data.guests >= 1 &&
+        request.resource.data.guests <= 20 &&
+        request.resource.data.nights is int &&
+        request.resource.data.nights >= 1 &&
+        request.resource.data.nights <= 365 &&
+        request.resource.data.nightlyPrice is int &&
+        request.resource.data.nightlyPrice >= 0 &&
+        request.resource.data.total is int &&
+        request.resource.data.total >= 0 &&
+        request.resource.data.accessPin is string &&
+        request.resource.data.accessPin.size() >= 4 &&
+        request.resource.data.accessPin.size() <= 12 &&
+        (request.resource.data.schemaVersion != 2 &&
+          !('paymentDemoCard' in request.resource.data) ||
+          request.resource.data.schemaVersion == 2 &&
+          request.resource.data.paymentDemoCard in ['funded', 'insufficient']) &&
+        request.resource.data.createdAt is string;
+
+      allow get, list, update, delete: if false;
+    }
+
+    // El gestor publica ownerUid en cada estado: así el cliente puede leer y
+    // listar sólo sus propias reservas («Mis reservas»).
+    match /reservation_status/{reservationId} {
+      // Antes de que el gestor cree el estado, el dueño de la solicitud debe
+      // recibir 404 (aún en proceso) y no un falso error de permisos.
+      allow get: if
+        request.auth != null &&
+        ((resource != null && resource.data.ownerUid == request.auth.uid) ||
+          (exists(/databases/$(database)/documents/reservation_intake/$(reservationId)) &&
+            get(/databases/$(database)/documents/reservation_intake/$(reservationId)).data.ownerUid == request.auth.uid));
+      allow list: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+      allow create, update, delete: if false;
+    }
+
+    match /reservation_verification_requests/{reservationId} {
+      allow create: if
+        request.auth != null &&
+        reservationId.matches('^(LS|RB)-[A-Z0-9-]{10,50}$') &&
+        request.resource.data.keys().hasOnly([
+          'reservationId', 'token', 'syncStatus', 'createdAt', 'ownerUid'
+        ]) &&
+        request.resource.data.reservationId == reservationId &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.syncStatus == 'pending' &&
+        request.resource.data.token is string &&
+        request.resource.data.token.matches('^[a-f0-9]{64}$') &&
+        request.resource.data.createdAt is string;
+
+      allow get: if
+        request.auth != null &&
+        resource.data.ownerUid == request.auth.uid;
+      allow list, update, delete: if false;
+    }
+
+    match /reservation_payment_requests/{requestId} {
+      allow create: if
+        request.auth != null &&
+        requestId.matches('^[a-f0-9-]{36}$') &&
+        request.resource.data.keys().hasOnly([
+          'reservationId', 'webpayToken', 'syncStatus', 'createdAt', 'ownerUid'
+        ]) &&
+        request.resource.data.keys().hasAll([
+          'reservationId', 'webpayToken', 'syncStatus', 'createdAt', 'ownerUid'
+        ]) &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.syncStatus == 'pending' &&
+        request.resource.data.reservationId is string &&
+        request.resource.data.reservationId.matches('^(LS|RB)-[A-Z0-9-]{10,50}$') &&
+        exists(/databases/$(database)/documents/reservation_intake/$(request.resource.data.reservationId)) &&
+        get(/databases/$(database)/documents/reservation_intake/$(request.resource.data.reservationId)).data.ownerUid == request.auth.uid &&
+        exists(/databases/$(database)/documents/reservation_status/$(request.resource.data.reservationId)) &&
+        get(/databases/$(database)/documents/reservation_status/$(request.resource.data.reservationId)).data.emailVerified == true &&
+        get(/databases/$(database)/documents/reservation_status/$(request.resource.data.reservationId)).data.verified == false &&
+        request.resource.data.webpayToken is string &&
+        request.resource.data.webpayToken.matches('^[A-Za-z0-9]{20,100}$') &&
+        request.resource.data.createdAt is string;
+      allow get: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+      allow list, update, delete: if false;
+    }
+
+    // La app Android envía una autorización firmada por la clave protegida
+    // con la biometría del teléfono. El gestor comprueba firma, pago, fechas
+    // y terminal antes de emitir una única orden de apertura.
+    match /phone_access_requests/{requestId} {
+      allow create: if
+        request.auth != null &&
+        requestId.matches('^[a-f0-9-]{36}$') &&
+        request.resource.data.keys().hasOnly([
+          'reservationId', 'ownerUid', 'syncStatus', 'createdAt',
+          'signedAt', 'publicKey', 'signature'
+        ]) &&
+        request.resource.data.keys().hasAll([
+          'reservationId', 'ownerUid', 'syncStatus', 'createdAt',
+          'signedAt', 'publicKey', 'signature'
+        ]) &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.syncStatus == 'pending' &&
+        request.resource.data.reservationId is string &&
+        request.resource.data.reservationId.matches('^(LS|RB)-[A-Z0-9-]{10,50}$') &&
+        exists(/databases/$(database)/documents/reservation_status/$(request.resource.data.reservationId)) &&
+        get(/databases/$(database)/documents/reservation_status/$(request.resource.data.reservationId)).data.ownerUid == request.auth.uid &&
+        get(/databases/$(database)/documents/reservation_status/$(request.resource.data.reservationId)).data.verified == true &&
+        request.resource.data.createdAt is string &&
+        request.resource.data.signedAt is string &&
+        request.resource.data.publicKey is string &&
+        request.resource.data.publicKey.size() <= 1000 &&
+        request.resource.data.signature is string &&
+        request.resource.data.signature.size() <= 500;
+      allow get: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+      allow list, update, delete: if false;
+    }
+
+    // El botón de apertura inmediata usa la sesión verificada del huésped.
+    // El gestor revalida la reserva y el horario antes de llamar a Dahua.
+    match /tap_access_requests/{requestId} {
+      allow create: if
+        request.auth != null &&
+        request.auth.token.email_verified == true &&
+        requestId.matches('^[a-f0-9-]{36}$') &&
+        request.resource.data.keys().hasOnly([
+          'reservationId', 'ownerUid', 'syncStatus', 'createdAt'
+        ]) &&
+        request.resource.data.keys().hasAll([
+          'reservationId', 'ownerUid', 'syncStatus', 'createdAt'
+        ]) &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.syncStatus == 'pending' &&
+        request.resource.data.reservationId is string &&
+        request.resource.data.reservationId.matches('^(LS|RB)-[A-Z0-9-]{10,50}$') &&
+        exists(/databases/$(database)/documents/reservation_status/$(request.resource.data.reservationId)) &&
+        get(/databases/$(database)/documents/reservation_status/$(request.resource.data.reservationId)).data.ownerUid == request.auth.uid &&
+        get(/databases/$(database)/documents/reservation_status/$(request.resource.data.reservationId)).data.verified == true &&
+        request.resource.data.createdAt is string;
+      allow get: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+      allow list, update, delete: if false;
+    }
+
+    match /phone_access_keys/{uid} {
+      allow read, write: if false;
+    }
+
+    match /public_ai_requests/{requestId} {
+      allow create: if
+        request.auth != null &&
+        requestId.matches('^[a-f0-9-]{36}$') &&
+        request.resource.data.keys().hasOnly([
+          'question', 'history', 'search', 'ownerUid', 'syncStatus', 'createdAt'
+        ]) &&
+        request.resource.data.keys().hasAll([
+          'question', 'history', 'search', 'ownerUid', 'syncStatus', 'createdAt'
+        ]) &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.syncStatus == 'pending' &&
+        request.resource.data.question is string &&
+        request.resource.data.question.size() >= 2 &&
+        request.resource.data.question.size() <= 1500 &&
+        request.resource.data.history is list &&
+        request.resource.data.history.size() <= 6 &&
+        request.resource.data.search is map &&
+        request.resource.data.createdAt is string;
+      allow get: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+      // Valoración 👍 / 👎 de una respuesta ya entregada: sólo esos campos.
+      allow update: if
+        request.auth != null &&
+        resource.data.ownerUid == request.auth.uid &&
+        resource.data.syncStatus == 'processed' &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['feedback', 'feedbackPending', 'feedbackAt']) &&
+        request.resource.data.feedback in ['up', 'down'] &&
+        request.resource.data.feedbackPending == true &&
+        request.resource.data.feedbackAt is string;
+      allow list, delete: if false;
+    }
+
+    match /public_reservation_lookup_requests/{requestId} {
+      allow create: if
+        request.auth != null &&
+        requestId.matches('^[a-f0-9-]{36}$') &&
+        request.resource.data.keys().hasOnly([
+          'documentId', 'ownerUid', 'syncStatus', 'createdAt'
+        ]) &&
+        request.resource.data.keys().hasAll([
+          'documentId', 'ownerUid', 'syncStatus', 'createdAt'
+        ]) &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.syncStatus == 'pending' &&
+        request.resource.data.documentId is string &&
+        request.resource.data.documentId.matches('^[0-9.kK-]{8,12}$') &&
+        request.resource.data.createdAt is string;
+      allow get: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+      allow list, update, delete: if false;
+    }
+
+    match /public_biometric_config/{configId} {
+      allow get: if configId == 'current';
+      allow list, create, update, delete: if false;
+    }
+
+    match /public_biometric_requests/{requestId} {
+      allow create: if
+        request.auth != null &&
+        requestId.matches('^[a-f0-9-]{36}$') &&
+        request.resource.data.keys().hasOnly([
+          'reservationId', 'documentId', 'consent', 'dahuaConsent', 'mimeType',
+          'encryptedImage', 'encryptedKey', 'iv', 'keyId',
+          'ownerUid', 'syncStatus', 'createdAt'
+        ]) &&
+        request.resource.data.keys().hasAll([
+          'reservationId', 'documentId', 'consent', 'dahuaConsent', 'mimeType',
+          'encryptedImage', 'encryptedKey', 'iv', 'keyId',
+          'ownerUid', 'syncStatus', 'createdAt'
+        ]) &&
+        request.resource.data.ownerUid == request.auth.uid &&
+        request.resource.data.syncStatus == 'pending' &&
+        request.resource.data.consent == true &&
+        request.resource.data.dahuaConsent == true &&
+        request.resource.data.reservationId is string &&
+        request.resource.data.reservationId.matches('^(LS|RB)-[A-Z0-9-]{10,50}$') &&
+        exists(/databases/$(database)/documents/reservation_intake/$(request.resource.data.reservationId)) &&
+        get(/databases/$(database)/documents/reservation_intake/$(request.resource.data.reservationId)).data.ownerUid == request.auth.uid &&
+        exists(/databases/$(database)/documents/reservation_status/$(request.resource.data.reservationId)) &&
+        get(/databases/$(database)/documents/reservation_status/$(request.resource.data.reservationId)).data.verified == true &&
+        request.resource.data.documentId is string &&
+        request.resource.data.documentId.size() <= 20 &&
+        request.resource.data.mimeType in ['image/jpeg', 'image/png'] &&
+        request.resource.data.encryptedImage is string &&
+        request.resource.data.encryptedImage.size() <= 700000 &&
+        request.resource.data.encryptedKey is string &&
+        request.resource.data.encryptedKey.size() <= 400 &&
+        request.resource.data.iv is string &&
+        request.resource.data.iv.size() <= 24 &&
+        request.resource.data.keyId is string &&
+        request.resource.data.keyId.matches('^[a-f0-9]{24}$') &&
+        request.resource.data.createdAt is string;
+      allow get: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+      allow list, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

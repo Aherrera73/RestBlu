@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Gestor local de datos de RestBlu" />
+    <title>Gestor local RestBlu</title>
+    <link rel="stylesheet" href="/assets/css/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">RB</span>
+          <span class="brand-copy"><strong>RestBlu</strong><small>CONTROL LOCAL</small></span>
+        </div>
+        <nav aria-label="Secciones del gestor">
+          <button class="nav-item active" data-view="summary"><span>01</span> Pulso</button>
+          <button class="nav-item" data-view="properties"><span>02</span> Espacios</button>
+          <button class="nav-item" data-view="customers"><span>03</span> Viajeros</button>
+          <button class="nav-item" data-view="reservations"><span>04</span> Estadías</button>
+          <button class="nav-item" data-view="ai"><span>05</span> RestBlu IA</button>
+          <button class="nav-item" data-view="biometrics"><span>06</span> Biometría</button>
+          <button class="nav-item" data-view="access"><span>07</span> Accesos</button>
+          <button class="nav-item" data-view="security"><span>08</span> Seguridad</button>
+          <button class="nav-item" data-view="terminals"><span>09</span> Terminales</button>
+          <button class="nav-item" data-view="accounts"><span>10</span> Cuentas</button>
+        </nav>
+        <div class="local-note">
+          <span class="status-dot"></span>
+          <div><strong id="database-engine">Base conectada</strong><small id="database-summary">Cargando base local…</small></div>
+        </div>
+      </aside>
+
+      <main>
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">RESTBLU / CENTRO DE CONTROL</p>
+            <h1 id="view-title">Pulso general</h1>
+          </div>
+          <div class="top-actions">
+            <a class="button secondary" href="/api/backup" download><span aria-hidden="true">↓</span> Descargar respaldo</a>
+            <a class="button primary" href="http://localhost:3000" target="_blank" rel="noreferrer">Abrir sitio <span aria-hidden="true">↗</span></a>
+          </div>
+        </header>
+
+        <section id="summary-view" class="view active" aria-labelledby="view-title">
+          <section class="pulse-board">
+            <div class="pulse-intro">
+              <span class="live-chip"><i></i> SINCRONIZACIÓN LOCAL</span>
+              <p>Una vista directa de lo que está publicado, quién reservó y qué estadías se generaron.</p>
+            </div>
+            <div class="stats">
+              <article><span>Espacios en línea</span><strong id="stat-properties">0</strong><small>visibles en el catálogo</small></article>
+              <article><span>Viajeros</span><strong id="stat-customers">0</strong><small>fichas locales</small></article>
+              <article><span>Estadías</span><strong id="stat-reservations">0</strong><small>reservas registradas</small></article>
+            </div>
+          </section>
+          <section class="panel today-panel">
+            <div class="panel-heading">
+              <div><p class="eyebrow">HOY</p><h2 id="today-title">Resumen del día</h2></div>
+              <button type="button" id="today-refresh" class="text-button">Actualizar</button>
+            </div>
+            <div id="today-alerts" class="today-alerts"></div>
+            <div id="today-grid" class="today-grid"><p class="empty">Cargando resumen…</p></div>
+          </section>
+          <div class="dashboard-grid">
+            <section class="panel activity-panel">
+              <div class="panel-heading">
+                <div><p class="eyebrow">MOVIMIENTO RECIENTE</p><h2>Últimas estadías</h2></div>
+                <button class="text-button" data-go="reservations">Abrir registro <span aria-hidden="true">→</span></button>
+              </div>
+              <div id="recent-reservations" class="activity-list"></div>
+            </section>
+            <section class="panel route-panel">
+              <p class="eyebrow">BASE DE DATOS</p>
+              <h2 id="database-engine-title">Base de datos para DBeaver</h2>
+              <ol class="publish-flow">
+                <li><span>1</span><div><strong>Alojamientos</strong><small>Ficha, ubicación, capacidad, valores e imágenes.</small></div></li>
+                <li><span>2</span><div><strong>Clientes</strong><small>RUT, contacto, verificación y antecedentes.</small></div></li>
+                <li><span>3</span><div><strong>Estadías</strong><small>Fechas, cobros, acceso, correo y PDF.</small></div></li>
+              </ol>
+              <div class="database-path"><span>ARCHIVO SQLITE</span><code id="database-path">Cargando…</code></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="properties-view" class="view" aria-labelledby="view-title">
+          <div class="toolbar">
+            <label class="search-field"><span>Buscar</span><input id="property-search" type="search" placeholder="Nombre, ciudad o tipo" /></label>
+            <button id="new-property" class="button primary">+ Nuevo espacio</button>
+          </div>
+          <section class="panel table-panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Alojamiento</th><th>Ubicación</th><th>Propietario</th><th>Capacidad</th><th>Precio</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody id="properties-table"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="customers-view" class="view" aria-labelledby="view-title">
+          <div class="toolbar">
+            <label class="search-field"><span>Buscar</span><input id="customer-search" type="search" placeholder="Nombre, documento o correo" /></label>
+            <p class="toolbar-help">Los clientes aparecen cuando se confirma una reserva en RestBlu.</p>
+          </div>
+          <section class="panel table-panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Cliente</th><th>Documento</th><th>Contacto</th><th>Última reserva</th><th>Estado</th><th>Acción</th></tr></thead>
+                <tbody id="customers-table"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="reservations-view" class="view" aria-labelledby="view-title">
+          <div class="toolbar">
+            <label class="search-field"><span>Buscar</span><input id="reservation-search" type="search" placeholder="Código, cliente o alojamiento" /></label>
+            <p class="toolbar-help">Seguimiento del correo, confirmación y envío del comprobante PDF.</p>
+          </div>
+          <section class="panel table-panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Código</th><th>Cliente</th><th>Alojamiento</th><th>Estadía</th><th>Total</th><th>Estado</th><th>Detalle</th></tr></thead>
+                <tbody id="reservations-table"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="ai-view" class="view" aria-labelledby="view-title">
+          <div class="ai-grid">
+            <section class="panel ai-console">
+              <div class="panel-heading">
+                <div>
+                  <p class="eyebrow">INTELIGENCIA ARTIFICIAL</p>
+                  <h2>Conversa con RestBlu IA</h2>
+                </div>
+                <span id="ai-status" class="ai-status checking"><i></i> Comprobando servidor…</span>
+              </div>
+              <p class="ai-lead">La IA conoce el resumen de hoy (llegadas, salidas, pagos por vencer, terminales y alertas de seguridad), las estadías cercanas, sus clientes y los alojamientos. Funciona en modo de solo lectura y responde en el idioma de la pregunta.</p>
+              <div class="ai-suggestions" aria-label="Preguntas sugeridas">
+                <button type="button" data-ai-question="Dame el resumen de hoy: llegadas, salidas, pagos por vencer y alertas de seguridad.">Resumen de hoy</button>
+                <button type="button" data-ai-question="Resume el estado actual de RestBlu.">Resumir operación</button>
+                <button type="button" data-ai-question="¿Cuántas reservas existen y en qué estado están?">Consultar reservas</button>
+                <button type="button" data-ai-question="Muéstrame los clientes registrados y su última estadía.">Consultar clientes</button>
+              </div>
+              <div id="ai-answer" class="ai-answer" aria-live="polite">
+                <span class="ai-avatar" aria-hidden="true">IA</span>
+                <div>
+                  <strong>RestBlu IA</strong>
+                  <p>Escribe una pregunta para comprobar la conexión con el modelo remoto.</p>
+                  <small id="ai-meta"></small>
+                  <div id="ai-rating" class="ai-rating" hidden>
+                    <button type="button" data-ai-rate="up" aria-label="Respuesta útil">👍</button>
+                    <button type="button" data-ai-rate="down" aria-label="Respuesta no útil">👎</button>
+                    <span id="ai-rating-note"></span>
+                  </div>
+                </div>
+              </div>
+              <form id="ai-form" class="ai-form">
+                <label for="ai-question">Pregunta</label>
+                <div>
+                  <textarea id="ai-question" rows="3" maxlength="1500" required placeholder="Ej.: ¿Cuántas reservas están pendientes de verificación?"></textarea>
+                  <button id="ai-submit" class="button primary" type="submit">Preguntar a la IA</button>
+                </div>
+              </form>
+            </section>
+            <aside class="panel ai-details">
+              <p class="eyebrow">CONEXIÓN REMOTA</p>
+              <h2>Servidor protegido</h2>
+              <dl>
+                <div><dt>Modelo</dt><dd id="ai-model">ia-local:latest</dd></div>
+                <div><dt>Acceso</dt><dd>Backend local</dd></div>
+                <div><dt>Datos disponibles</dt><dd>Registro completo</dd></div>
+                <div><dt>Permiso</dt><dd>Solo lectura</dd></div>
+              </dl>
+              <p>La clave permanece en la configuración privada del computador y nunca se entrega al navegador. Las consultas internas sí pueden incluir datos personales cuando sean necesarios.</p>
+            </aside>
+          </div>
+          <section class="panel table-panel">
+            <div class="panel-heading security-heading">
+              <div><p class="eyebrow">CALIDAD</p><h2>Valoraciones de las respuestas</h2></div>
+              <label class="search-field"><span>Mostrar</span>
+                <select id="ai-feedback-filter"><option value="down">Sólo 👎 (para mejorar)</option><option value="all">Todas</option></select>
+              </label>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Fecha</th><th>Dónde</th><th>Pregunta</th><th>Respuesta</th><th>Valoración</th></tr></thead>
+                <tbody id="ai-feedback-table"><tr><td colspan="5" class="empty">Cargando…</td></tr></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="biometrics-view" class="view" aria-labelledby="view-title">
+          <div class="toolbar">
+            <label class="search-field"><span>Buscar</span><input id="biometric-search" type="search" placeholder="Reserva, huésped o alojamiento" /></label>
+            <span id="biometric-server-status" class="ai-status checking"><i></i> Comprobando servidor…</span>
+          </div>
+          <section class="panel biometric-intro">
+            <div>
+              <p class="eyebrow">VERIFICACIÓN FACIAL 1:1</p>
+              <h2>Comprobar identidad en recepción</h2>
+              <p>Las altas nuevas se envían directamente a Dahua y se verifican en el terminal. Esta comparación 1:1 sólo sirve para reservas antiguas que conservan una plantilla cifrada local.</p>
+            </div>
+            <div class="biometric-warning"><strong>Uso supervisado</strong><span>La cámara observa cambios naturales del rostro antes de compararlo, sin pedir gestos. Una foto fija normalmente no basta; un video o una cámara virtual todavía pueden suplantar a alguien. No lo uses para abrir puertas reales.</span></div>
+          </section>
+          <section class="panel table-panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Reserva</th><th>Huésped</th><th>Alojamiento</th><th>Biometría</th><th>Dahua</th><th>Última verificación</th><th>Acción</th></tr></thead>
+                <tbody id="biometrics-table"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="access-view" class="view" aria-labelledby="view-title">
+          <section class="panel biometric-intro">
+            <div>
+              <p class="eyebrow">OPERACIÓN INTERNA</p>
+              <h2>Estado de acceso por reserva</h2>
+              <p>Al confirmarse el pago, el gestor registra al huésped en el terminal Dahua con su QR de acceso, vigente hasta el check-out. El huésped ve el QR en la web o la app, que lo renuevan cada pocos minutos; el rostro es opcional.</p>
+            </div>
+            <div class="biometric-warning"><strong>Cerradura real</strong><span>El Dahua abre una puerta real. Cada reserva pagada en Webpay obtiene acceso durante su estadía. El gestor debe estar encendido para generar los QR y revocar los accesos al terminar.</span></div>
+          </section>
+          <div class="access-overview" aria-label="Resumen de accesos">
+            <article><span>Estadías confirmadas</span><strong id="access-confirmed">0</strong><small>con pago aprobado en Webpay</small></article>
+            <article><span>QR habilitados</span><strong id="access-current">0</strong><small>registrados en el Dahua</small></article>
+            <article><span>Rostros en el Dahua</span><strong id="access-biometric">0</strong><small>altas faciales opcionales</small></article>
+          </div>
+          <div class="toolbar">
+            <label class="search-field"><span>Buscar</span><input id="access-search" type="search" placeholder="Reserva, huésped o alojamiento" /></label>
+            <button type="button" class="button secondary" data-go="biometrics">Abrir verificación facial</button>
+          </div>
+          <section class="panel table-panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Reserva</th><th>Huésped</th><th>Estadía</th><th>Estado</th><th>Biometría</th><th>Dahua</th><th>Detalle</th></tr></thead>
+                <tbody id="access-table"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="accounts-view" class="view" aria-labelledby="view-title">
+          <section class="panel biometric-intro">
+            <div>
+              <p class="eyebrow">CUENTAS RESTBLU</p>
+              <h2>Clientes con cuenta en la web y la app</h2>
+              <p>Cuentas creadas con correo o con Google. Eliminar una cuenta borra su acceso, su perfil y libera su RUT para que pueda registrarse de nuevo; sus reservas se conservan en el gestor como historial.</p>
+            </div>
+            <div class="biometric-warning"><strong>No se puede deshacer</strong><span>La persona deberá crear una cuenta nueva. No se permite eliminar una cuenta con una estadía confirmada vigente: cancélala antes.</span></div>
+          </section>
+          <div class="access-overview" aria-label="Resumen de cuentas">
+            <article><span>Cuentas de clientes</span><strong id="accounts-total">0</strong><small>con correo o Google</small></article>
+            <article><span>Registro incompleto</span><strong id="accounts-incomplete">0</strong><small>sin RUT: no terminaron de registrarse</small></article>
+            <article><span>Identidades anónimas</span><strong id="accounts-anonymous">0</strong><small>de versiones anteriores de la web y la app</small></article>
+          </div>
+          <div class="toolbar">
+            <label class="search-field"><span>Buscar</span><input id="accounts-search" type="search" placeholder="Nombre, correo o RUT" /></label>
+            <label class="switch-row"><input id="accounts-show-anonymous" type="checkbox" /><span>Mostrar anónimas</span></label>
+            <button type="button" id="accounts-refresh" class="button secondary">Actualizar</button>
+          </div>
+          <section class="panel table-panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Cliente</th><th>Correo</th><th>RUT</th><th>Acceso</th><th>Creada / último ingreso</th><th>Reservas</th><th></th></tr></thead>
+                <tbody id="accounts-table"><tr><td colspan="7" class="empty">Cargando cuentas…</td></tr></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="terminals-view" class="view" aria-labelledby="view-title">
+          <section class="panel biometric-intro">
+            <div>
+              <p class="eyebrow">HUB DAHUA</p>
+              <h2>Terminales disponibles en el servidor</h2>
+              <p>Cada Dahua se conecta por Internet al hub con su Registro Automático CGI. Aquí se ve cuáles están en línea, si usan HTTPS y qué viviendas atienden. Las reservas confirmadas de una vivienda se registran en su terminal.</p>
+            </div>
+            <div class="biometric-warning"><strong>Túnel ngrok</strong><span>Los Dahua llegan al hub por la dirección pública del túnel. En el plan gratis cambia al reiniciar ngrok: si cambia, hay que volver a configurarla en cada Dahua.</span></div>
+          </section>
+          <div class="access-overview" aria-label="Estado del hub">
+            <article><span>Hub Dahua</span><strong id="terminals-hub">—</strong><small id="terminals-hub-detail">Consultando…</small></article>
+            <article><span>Dirección pública (ngrok)</span><strong id="terminals-tunnel">—</strong><small id="terminals-tunnel-detail">Consultando…</small></article>
+            <article><span>Terminales en línea</span><strong id="terminals-online">0</strong><small id="terminals-online-detail">de 0 registrados en el hub</small></article>
+          </div>
+          <div class="toolbar">
+            <span id="terminals-updated" class="ai-status checking"><i></i> Cargando…</span>
+            <button type="button" id="terminals-refresh" class="button secondary">Actualizar</button>
+          </div>
+          <section class="panel table-panel">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Terminal</th><th>Estado</th><th>Conexión</th><th>Desde / última vez</th><th>Viviendas</th><th>Prueba</th></tr></thead>
+                <tbody id="terminals-table"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section id="security-view" class="view" aria-labelledby="view-title">
+          <section class="panel biometric-intro">
+            <div>
+              <p class="eyebrow">REGISTRO DE LOS TERMINALES DAHUA</p>
+              <h2>Entradas y salidas por vivienda</h2>
+              <p>Cada minuto el gestor copia de cada terminal Dahua (red local o conectado por Internet al hub) las aperturas y rechazos, y los asocia a la vivienda por la reserva de la persona o por el terminal de la vivienda. Cada vivienda indica su terminal: ahí se registran sus reservas confirmadas. El historial se conserva aunque el acceso ya se haya revocado.</p>
+            </div>
+            <div class="biometric-warning"><strong>Salidas</strong><span>El terminal sólo sabe quién sale si hay un lector de salida. Con botón de salida, la salida queda registrada sin persona y aparece en «Sin vivienda asociada».</span></div>
+          </section>
+          <div class="toolbar">
+            <label class="search-field"><span>Buscar</span><input id="security-search" type="search" placeholder="Vivienda, ciudad o terminal (PROP-0001)" /></label>
+            <label class="search-field"><span>Periodo</span>
+              <select id="security-days">
+                <option value="1">Hoy</option>
+                <option value="7" selected>Últimos 7 días</option>
+                <option value="30">Últimos 30 días</option>
+                <option value="90">Últimos 90 días</option>
+              </select>
+            </label>
+            <span id="security-sync" class="ai-status checking"><i></i> Cargando registro…</span>
+          </div>
+          <div id="security-alerts" class="today-alerts"></div>
+          <div id="security-properties" class="security-grid" aria-label="Viviendas"></div>
+          <section class="panel table-panel">
+            <div class="panel-heading security-heading">
+              <div><p class="eyebrow">MOVIMIENTOS</p><h2 id="security-title">Todas las viviendas</h2></div>
+              <button type="button" id="security-all" class="small-button">Ver todas</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Fecha y hora</th><th>Persona</th><th>Vivienda</th><th>Reserva</th><th>Terminal</th><th>Movimiento</th><th>Método</th><th>Resultado</th></tr></thead>
+                <tbody id="security-table"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="property-dialog">
+      <form id="property-form" method="dialog">
+        <header><div><p class="eyebrow">ALOJAMIENTO</p><h2 id="property-dialog-title">Nuevo alojamiento</h2></div><button type="button" class="icon-button close-dialog" aria-label="Cerrar">×</button></header>
+        <div class="form-body">
+          <input id="property-id" type="hidden" />
+          <div class="form-grid">
+            <label class="wide">Nombre<input id="property-name" required maxlength="100" /></label>
+            <label class="wide">Ubicación<input id="property-place" required maxlength="120" placeholder="Ej.: Pucón, Chile" /></label>
+            <label class="wide">Dirección<input id="property-address" maxlength="220" placeholder="Calle, número y referencia" /></label>
+            <label>Comuna<input id="property-commune" maxlength="100" /></label>
+            <label>Región<input id="property-region" maxlength="100" /></label>
+            <label>Tipo<input id="property-type" required maxlength="80" placeholder="Ej.: Cabaña privada" /></label>
+            <label>Precio por noche<input id="property-price" required type="number" min="0" step="1000" /></label>
+            <label>Huéspedes<input id="property-guests" required type="number" min="1" max="30" /></label>
+            <label>Dormitorios<input id="property-beds" required type="number" min="1" max="30" /></label>
+            <label>Camas<input id="property-bed-count" required type="number" min="1" max="50" /></label>
+            <label>Baños<input id="property-baths" required type="number" min="1" max="30" /></label>
+            <label>Calificación<input id="property-rating" required type="number" min="0" max="5" step="0.1" /></label>
+            <label>Hora de check-in<input id="property-check-in-time" required type="time" /></label>
+            <label>Hora de check-out<input id="property-check-out-time" required type="time" /></label>
+            <label>Latitud<input id="property-latitude" type="number" step="0.000001" placeholder="Ej.: -33.448890" /></label>
+            <label>Longitud<input id="property-longitude" type="number" step="0.000001" placeholder="Ej.: -70.669265" /></label>
+            <label class="wide">Etiquetas<input id="property-tags" placeholder="Mar, Piscina, Familia" /></label>
+            <label class="wide">Descripción<textarea id="property-description" rows="4" maxlength="2000" placeholder="Características, entorno y recomendaciones del alojamiento"></textarea></label>
+            <fieldset class="image-fieldset wide">
+              <legend>Propietario · información privada</legend>
+              <p>Estos datos solo aparecen en el gestor y se entregan al huésped cuando la reserva queda confirmada.</p>
+              <div class="form-grid">
+                <label>Nombre completo<input id="property-owner-name" required maxlength="120" /></label>
+                <label>RUT<input id="property-owner-document" required maxlength="12" placeholder="12.345.678-5" /></label>
+                <label>Correo<input id="property-owner-email" required type="email" maxlength="160" /></label>
+                <label>Teléfono<input id="property-owner-phone" required type="tel" maxlength="60" /></label>
+              </div>
+            </fieldset>
+            <fieldset class="image-fieldset wide">
+              <legend>Manual de la vivienda · lo usa Blu</legend>
+              <p>Blu, el asistente de la web y la app, responde con estos textos. Lo del huésped sólo se lo muestra a quien tiene una estadía confirmada en esta vivienda.</p>
+              <div class="form-grid">
+                <label class="wide">Información para viajeros (pública)<textarea id="property-guide-public" rows="4" maxlength="3000" placeholder="Normas de la casa, estacionamiento, mascotas, accesibilidad, qué hay cerca, cómo llegar en transporte…"></textarea></label>
+                <label class="wide">Manual del huésped (sólo estadías confirmadas)<textarea id="property-guide-private" rows="4" maxlength="3000" placeholder="Wi-Fi y clave, cómo entrar con el QR, dónde están las llaves o la basura, contacto en caso de emergencia…"></textarea></label>
+              </div>
+            </fieldset>
+            <fieldset class="image-fieldset wide">
+              <legend>Control de acceso</legend>
+              <p>Registration ID del terminal Dahua de este alojamiento, el mismo que se configuró en su Registro Automático CGI. Si se deja vacío se usa el terminal por omisión del gestor.</p>
+              <div class="form-grid">
+                <label>Terminal Dahua<input id="property-dahua-terminal" maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{0,63}" placeholder="PROP-0001" /></label>
+              </div>
+            </fieldset>
+            <fieldset class="image-fieldset wide">
+              <legend>Fotografías del alojamiento</legend>
+              <p>Selecciona archivos JPG, PNG, WEBP o GIF de hasta 8 MB cada uno.</p>
+              <div class="image-upload-grid">
+                <label class="image-upload">
+                  <span>Imagen principal</span>
+                  <input id="property-image-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+                  <span class="upload-frame"><img id="property-image-preview" alt="Vista previa de imagen principal" /><strong>Elegir archivo</strong><small>Obligatoria al crear</small></span>
+                  <input id="property-image" type="hidden" />
+                </label>
+                <label class="image-upload">
+                  <span>Secundaria 1</span>
+                  <input id="property-gallery-1-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+                  <span class="upload-frame"><img id="property-gallery-1-preview" alt="Vista previa de imagen secundaria 1" /><strong>Elegir archivo</strong><small>Opcional</small></span>
+                  <input id="property-gallery-1" type="hidden" />
+                </label>
+                <label class="image-upload">
+                  <span>Secundaria 2</span>
+                  <input id="property-gallery-2-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif" />
+                  <span class="upload-frame"><img id="property-gallery-2-preview" alt="Vista previa de imagen secundaria 2" /><strong>Elegir archivo</strong><small>Opcional</small></span>
+                  <input id="property-gallery-2" type="hidden" />
+                </label>
+              </div>
+            </fieldset>
+            <label class="switch-row wide"><input id="property-active" type="checkbox" checked /><span>Publicar este alojamiento en RestBlu</span></label>
+          </div>
+        </div>
+        <footer><button type="button" class="button secondary close-dialog">Cancelar</button><button type="submit" class="button primary">Guardar alojamiento</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="customer-dialog">
+      <form id="customer-form" method="dialog">
+        <header><div><p class="eyebrow">CLIENTE</p><h2>Editar datos del cliente</h2></div><button type="button" class="icon-button close-customer" aria-label="Cerrar">×</button></header>
+        <div class="form-body">
+          <input id="customer-id" type="hidden" />
+          <div class="form-grid">
+            <label class="wide">Nombre completo<input id="customer-name" required /></label>
+            <label>Documento<input id="customer-document" /></label>
+            <label>Estado<select id="customer-status"><option value="activo">Activo</option><option value="inactivo">Inactivo</option></select></label>
+            <label>Correo<input id="customer-email" type="email" /></label>
+            <label>Teléfono<input id="customer-phone" type="tel" /></label>
+            <label>Nacionalidad<input id="customer-nationality" maxlength="80" /></label>
+            <label>Fecha de nacimiento<input id="customer-birth-date" type="date" /></label>
+            <label>Contacto de emergencia<input id="customer-emergency-name" maxlength="120" /></label>
+            <label>Teléfono de emergencia<input id="customer-emergency-phone" type="tel" maxlength="60" /></label>
+            <label class="switch-row wide"><input id="customer-email-verified" type="checkbox" disabled /><span>Correo validado en alguna reserva</span></label>
+            <label class="wide">Notas<textarea id="customer-notes" rows="4" placeholder="Observaciones internas"></textarea></label>
+          </div>
+        </div>
+        <footer><button type="button" class="button secondary close-customer">Cancelar</button><button type="submit" class="button primary">Guardar cliente</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="terminal-dialog">
+      <form id="terminal-form" method="dialog">
+        <header><div><p class="eyebrow">CONTROL DE ACCESO</p><h2 id="terminal-dialog-title">Asignar terminal</h2></div><button type="button" class="icon-button close-terminal" aria-label="Cerrar">×</button></header>
+        <div class="form-body">
+          <input id="terminal-property-id" type="hidden" />
+          <p class="terminal-help">Escribe el <strong>ID de registro</strong> configurado en el «Registro Automático CGI» del Dahua de esta vivienda. Las reservas confirmadas de la vivienda se registrarán en ese terminal. Déjalo vacío para usar el terminal por omisión.</p>
+          <div class="form-grid">
+            <label class="wide">Terminal Dahua (ID de registro)<input id="terminal-registration-id" maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{0,63}" placeholder="PROP-0001" list="terminal-online-list" autocomplete="off" /></label>
+            <datalist id="terminal-online-list"></datalist>
+          </div>
+          <p id="terminal-online-hint" class="terminal-help"></p>
+        </div>
+        <footer><button type="button" class="button secondary close-terminal">Cancelar</button><button type="submit" class="button primary">Guardar terminal</button></footer>
+      </form>
+    </dialog>
+
+    <dialog id="reservation-dialog">
+      <div class="record-dialog">
+        <header><div><p class="eyebrow">ESTADÍA</p><h2 id="reservation-dialog-title">Detalle de la estadía</h2></div><button type="button" class="icon-button close-reservation" aria-label="Cerrar">×</button></header>
+        <div id="reservation-detail" class="record-detail"></div>
+        <footer><button type="button" class="button secondary close-reservation">Cerrar</button></footer>
+      </div>
+    </dialog>
+
+    <dialog id="biometric-dialog">
+      <div class="record-dialog biometric-dialog-content">
+        <header><div><p class="eyebrow">COMPROBACIÓN FACIAL</p><h2 id="biometric-dialog-title">Verificar identidad</h2></div><button type="button" class="icon-button close-biometric" aria-label="Cerrar">×</button></header>
+        <div class="biometric-camera-body">
+          <p id="biometric-reservation-summary" class="biometric-reservation-summary"></p>
+          <div class="biometric-camera-frame">
+            <video id="biometric-video" autoplay playsinline muted></video>
+          </div>
+          <canvas id="biometric-canvas" hidden></canvas>
+          <div id="biometric-result" class="biometric-result neutral" aria-live="polite">La cámara iniciará la comprobación automáticamente.</div>
+          <p class="biometric-privacy">No necesitas hacer gestos ni pulsar botones. El navegador observa cambios naturales del rostro y sólo envía una captura al detectar una señal suficiente. Esto no es una prueba de vida certificada: videos y cámaras virtuales podrían engañar la comparación.</p>
+        </div>
+        <footer><button type="button" class="button secondary close-biometric">Cerrar cámara</button></footer>
+      </div>
+    </dialog>
+
+    <output id="toast" aria-live="polite"></output>
+    <script src="/assets/js/app.js" type="module"></script>
+  </body>
+</html>

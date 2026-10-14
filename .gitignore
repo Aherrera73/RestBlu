@@ -1,0 +1,36 @@
+# Dependencias y compilaciones
+**/node_modules/
+**/.next/
+**/.vinext/
+**/.wrangler/
+**/.gradle/
+**/.idea/
+**/build/
+**/dist/
+**/__pycache__/
+**/coverage/
+**/tsconfig.tsbuildinfo
+
+# Datos locales y configuración privada
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.local.example
+**/local.properties
+**/data/
+**/uploads/
+**/backups/
+**/respaldos/
+**/*.sqlite*
+**/*.db
+**/*.log
+**/*.pem
+**/*.jks
+**/*.keystore
+
+# Artefactos y análisis locales
+**/*.apk
+**/*.zip
+graphify-out/
+tmp/
+_analysis_tmp/

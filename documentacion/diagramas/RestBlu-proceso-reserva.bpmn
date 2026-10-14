@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="RestBlu_Definiciones" targetNamespace="http://restblu.cl/bpmn" exporter="RestBlu" exporterVersion="1.0">
+  <bpmn:collaboration id="Colaboracion_RestBlu">
+    <bpmn:participant id="Pool_RestBlu" name="RestBlu: reserva y acceso" processRef="Proceso_Reserva" />
+  </bpmn:collaboration>
+  <bpmn:process id="Proceso_Reserva" name="Reserva y acceso RestBlu" isExecutable="false">
+    <bpmn:laneSet id="Carriles">
+      <bpmn:lane id="L_huesped" name="Huésped (app / web)">
+        <bpmn:flowNodeRef>S1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T8</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T17</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T18</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_firebase" name="Firebase (nube)">
+        <bpmn:flowNodeRef>T4</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T16</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_gestor" name="Gestor RestBlu (PC)">
+        <bpmn:flowNodeRef>T5</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G3</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T7</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T6</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E1</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T10</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G4</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T12</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T11</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E2</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T15</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T22</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>IE1</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_webpay" name="Webpay Transbank">
+        <bpmn:flowNodeRef>T9</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_hub" name="Hub Dahua (PC)">
+        <bpmn:flowNodeRef>T13</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T23</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E3</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="L_dahua" name="Terminal Dahua (vivienda)">
+        <bpmn:flowNodeRef>T14</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>G5</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T19</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T20</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T21</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>T24</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>E4</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="S1" name="Quiere reservar">
+      <bpmn:outgoing>F1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="T1" name="Iniciar sesión (correo o Google)">
+      <bpmn:incoming>F1</bpmn:incoming>
+      <bpmn:outgoing>F2</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="G1" name="¿Cuenta con RUT y correo verificado?" gatewayDirection="Diverging">
+      <bpmn:incoming>F2</bpmn:incoming>
+      <bpmn:outgoing>F3</bpmn:outgoing>
+      <bpmn:outgoing>F4</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="T2" name="Completar registro: RUT único y código de 6 dígitos">
+      <bpmn:incoming>F3</bpmn:incoming>
+      <bpmn:outgoing>F5</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="G2" name="" gatewayDirection="Converging">
+      <bpmn:incoming>F4</bpmn:incoming>
+      <bpmn:incoming>F5</bpmn:incoming>
+      <bpmn:outgoing>F6</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:userTask id="T3" name="Elegir alojamiento, fechas y huéspedes">
+      <bpmn:incoming>F6</bpmn:incoming>
+      <bpmn:outgoing>F7</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="T4" name="Guardar solicitud (reservation_intake)">
+      <bpmn:incoming>F7</bpmn:incoming>
+      <bpmn:outgoing>F8</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="T5" name="Validar datos y recalcular el precio">
+      <bpmn:incoming>F8</bpmn:incoming>
+      <bpmn:outgoing>F9</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="G3" name="¿Fechas disponibles?" gatewayDirection="Diverging">
+      <bpmn:incoming>F9</bpmn:incoming>
+      <bpmn:outgoing>F10</bpmn:outgoing>
+      <bpmn:outgoing>F11</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="T7" name="Crear reserva pendiente de pago (60 min)">
+      <bpmn:incoming>F10</bpmn:incoming>
+      <bpmn:outgoing>F13</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="T6" name="Rechazar: fechas ocupadas">
+      <bpmn:incoming>F11</bpmn:incoming>
+      <bpmn:outgoing>F12</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="E1" name="Reserva rechazada">
+      <bpmn:incoming>F12</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="T8" name="Pagar con Webpay">
+      <bpmn:incoming>F13</bpmn:incoming>
+      <bpmn:outgoing>F14</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:serviceTask id="T9" name="Autorizar el pago con tarjeta">
+      <bpmn:incoming>F14</bpmn:incoming>
+      <bpmn:outgoing>F15</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="T10" name="Verificar el pago en Transbank">
+      <bpmn:incoming>F15</bpmn:incoming>
+      <bpmn:outgoing>F16</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:exclusiveGateway id="G4" name="¿Pago aprobado?" gatewayDirection="Diverging">
+      <bpmn:incoming>F16</bpmn:incoming>
+      <bpmn:outgoing>F17</bpmn:outgoing>
+      <bpmn:outgoing>F18</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="T12" name="Confirmar reserva y generar código QR">
+      <bpmn:incoming>F17</bpmn:incoming>
+      <bpmn:outgoing>F20</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="T11" name="Liberar fechas: reserva expirada">
+      <bpmn:incoming>F18</bpmn:incoming>
+      <bpmn:outgoing>F19</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="E2" name="Reserva expirada">
+      <bpmn:incoming>F19</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="T13" name="Enviar persona, QR y vigencia al terminal">
+      <bpmn:incoming>F20</bpmn:incoming>
+      <bpmn:outgoing>F21</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="T14" name="Registrar huésped (válido del check-in al check-out)">
+      <bpmn:incoming>F21</bpmn:incoming>
+      <bpmn:outgoing>F22</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="T15" name="Enviar correo de confirmación con PDF">
+      <bpmn:incoming>F22</bpmn:incoming>
+      <bpmn:outgoing>F23</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="T16" name="Publicar estado y QR dinámico">
+      <bpmn:incoming>F23</bpmn:incoming>
+      <bpmn:outgoing>F24</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:userTask id="T17" name="Ver el QR en la app o la web">
+      <bpmn:incoming>F24</bpmn:incoming>
+      <bpmn:outgoing>F25</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="T18" name="Presentar el QR en el lector">
+      <bpmn:incoming>F25</bpmn:incoming>
+      <bpmn:outgoing>F26</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="G5" name="¿QR válido y vigente?" gatewayDirection="Diverging">
+      <bpmn:incoming>F26</bpmn:incoming>
+      <bpmn:outgoing>F27</bpmn:outgoing>
+      <bpmn:outgoing>F28</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:serviceTask id="T19" name="Abrir la puerta">
+      <bpmn:incoming>F27</bpmn:incoming>
+      <bpmn:outgoing>F29</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="T20" name="Rechazar el acceso">
+      <bpmn:incoming>F28</bpmn:incoming>
+      <bpmn:outgoing>F30</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="T21" name="Registrar movimiento (entrada / salida)">
+      <bpmn:incoming>F29</bpmn:incoming>
+      <bpmn:outgoing>F32</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="T24" name="Registrar el intento rechazado">
+      <bpmn:incoming>F30</bpmn:incoming>
+      <bpmn:outgoing>F31</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="E4" name="Acceso denegado (puede reintentar)">
+      <bpmn:incoming>F31</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="T22" name="Copiar el movimiento a Seguridad">
+      <bpmn:incoming>F32</bpmn:incoming>
+      <bpmn:outgoing>F33</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:intermediateCatchEvent id="IE1" name="Llega el check-out">
+      <bpmn:incoming>F33</bpmn:incoming>
+      <bpmn:outgoing>F34</bpmn:outgoing>
+      <bpmn:timerEventDefinition id="IE1_def" />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:serviceTask id="T23" name="Eliminar la persona del terminal">
+      <bpmn:incoming>F34</bpmn:incoming>
+      <bpmn:outgoing>F35</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="E3" name="Estadía finalizada">
+      <bpmn:incoming>F35</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="F1" name="" sourceRef="S1" targetRef="T1" />
+    <bpmn:sequenceFlow id="F2" name="" sourceRef="T1" targetRef="G1" />
+    <bpmn:sequenceFlow id="F3" name="No" sourceRef="G1" targetRef="T2" />
+    <bpmn:sequenceFlow id="F4" name="Sí" sourceRef="G1" targetRef="G2" />
+    <bpmn:sequenceFlow id="F5" name="" sourceRef="T2" targetRef="G2" />
+    <bpmn:sequenceFlow id="F6" name="" sourceRef="G2" targetRef="T3" />
+    <bpmn:sequenceFlow id="F7" name="" sourceRef="T3" targetRef="T4" />
+    <bpmn:sequenceFlow id="F8" name="" sourceRef="T4" targetRef="T5" />
+    <bpmn:sequenceFlow id="F9" name="" sourceRef="T5" targetRef="G3" />
+    <bpmn:sequenceFlow id="F10" name="Sí" sourceRef="G3" targetRef="T7" />
+    <bpmn:sequenceFlow id="F11" name="No" sourceRef="G3" targetRef="T6" />
+    <bpmn:sequenceFlow id="F12" name="" sourceRef="T6" targetRef="E1" />
+    <bpmn:sequenceFlow id="F13" name="" sourceRef="T7" targetRef="T8" />
+    <bpmn:sequenceFlow id="F14" name="" sourceRef="T8" targetRef="T9" />
+    <bpmn:sequenceFlow id="F15" name="" sourceRef="T9" targetRef="T10" />
+    <bpmn:sequenceFlow id="F16" name="" sourceRef="T10" targetRef="G4" />
+    <bpmn:sequenceFlow id="F17" name="Sí" sourceRef="G4" targetRef="T12" />
+    <bpmn:sequenceFlow id="F18" name="No" sourceRef="G4" targetRef="T11" />
+    <bpmn:sequenceFlow id="F19" name="" sourceRef="T11" targetRef="E2" />
+    <bpmn:sequenceFlow id="F20" name="" sourceRef="T12" targetRef="T13" />
+    <bpmn:sequenceFlow id="F21" name="" sourceRef="T13" targetRef="T14" />
+    <bpmn:sequenceFlow id="F22" name="" sourceRef="T14" targetRef="T15" />
+    <bpmn:sequenceFlow id="F23" name="" sourceRef="T15" targetRef="T16" />
+    <bpmn:sequenceFlow id="F24" name="" sourceRef="T16" targetRef="T17" />
+    <bpmn:sequenceFlow id="F25" name="" sourceRef="T17" targetRef="T18" />
+    <bpmn:sequenceFlow id="F26" name="" sourceRef="T18" targetRef="G5" />
+    <bpmn:sequenceFlow id="F27" name="Sí" sourceRef="G5" targetRef="T19" />
+    <bpmn:sequenceFlow id="F28" name="No" sourceRef="G5" targetRef="T20" />
+    <bpmn:sequenceFlow id="F29" name="" sourceRef="T19" targetRef="T21" />
+    <bpmn:sequenceFlow id="F30" name="" sourceRef="T20" targetRef="T24" />
+    <bpmn:sequenceFlow id="F31" name="" sourceRef="T24" targetRef="E4" />
+    <bpmn:sequenceFlow id="F32" name="" sourceRef="T21" targetRef="T22" />
+    <bpmn:sequenceFlow id="F33" name="" sourceRef="T22" targetRef="IE1" />
+    <bpmn:sequenceFlow id="F34" name="" sourceRef="IE1" targetRef="T23" />
+    <bpmn:sequenceFlow id="F35" name="" sourceRef="T23" targetRef="E3" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="Diagrama_RestBlu" name="Reserva y acceso">
+    <bpmndi:BPMNPlane id="Plano_RestBlu" bpmnElement="Colaboracion_RestBlu">
+      <bpmndi:BPMNShape id="Pool_RestBlu_di" bpmnElement="Pool_RestBlu" isHorizontal="true"><dc:Bounds x="40" y="40" width="4880" height="1200" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_huesped_di" bpmnElement="L_huesped" isHorizontal="true"><dc:Bounds x="70" y="40" width="4850" height="200" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_firebase_di" bpmnElement="L_firebase" isHorizontal="true"><dc:Bounds x="70" y="240" width="4850" height="200" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_gestor_di" bpmnElement="L_gestor" isHorizontal="true"><dc:Bounds x="70" y="440" width="4850" height="200" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_webpay_di" bpmnElement="L_webpay" isHorizontal="true"><dc:Bounds x="70" y="640" width="4850" height="200" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_hub_di" bpmnElement="L_hub" isHorizontal="true"><dc:Bounds x="70" y="840" width="4850" height="200" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="L_dahua_di" bpmnElement="L_dahua" isHorizontal="true"><dc:Bounds x="70" y="1040" width="4850" height="200" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="S1_di" bpmnElement="S1"><dc:Bounds x="187" y="122" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T1_di" bpmnElement="T1"><dc:Bounds x="310" y="105" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G1_di" bpmnElement="G1" isMarkerVisible="true"><dc:Bounds x="520" y="115" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T2_di" bpmnElement="T2"><dc:Bounds x="650" y="160" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G2_di" bpmnElement="G2" isMarkerVisible="true"><dc:Bounds x="860" y="115" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T3_di" bpmnElement="T3"><dc:Bounds x="990" y="105" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T4_di" bpmnElement="T4"><dc:Bounds x="1160" y="305" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T5_di" bpmnElement="T5"><dc:Bounds x="1330" y="505" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G3_di" bpmnElement="G3" isMarkerVisible="true"><dc:Bounds x="1540" y="515" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T7_di" bpmnElement="T7"><dc:Bounds x="1670" y="455" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T6_di" bpmnElement="T6"><dc:Bounds x="1670" y="555" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E1_di" bpmnElement="E1"><dc:Bounds x="1887" y="572" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T8_di" bpmnElement="T8"><dc:Bounds x="1840" y="105" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T9_di" bpmnElement="T9"><dc:Bounds x="2010" y="705" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T10_di" bpmnElement="T10"><dc:Bounds x="2180" y="505" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G4_di" bpmnElement="G4" isMarkerVisible="true"><dc:Bounds x="2390" y="515" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T12_di" bpmnElement="T12"><dc:Bounds x="2520" y="455" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T11_di" bpmnElement="T11"><dc:Bounds x="2520" y="555" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E2_di" bpmnElement="E2"><dc:Bounds x="2737" y="572" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T13_di" bpmnElement="T13"><dc:Bounds x="2690" y="905" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T14_di" bpmnElement="T14"><dc:Bounds x="2860" y="1105" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T15_di" bpmnElement="T15"><dc:Bounds x="3030" y="505" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T16_di" bpmnElement="T16"><dc:Bounds x="3200" y="305" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T17_di" bpmnElement="T17"><dc:Bounds x="3370" y="105" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T18_di" bpmnElement="T18"><dc:Bounds x="3540" y="105" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="G5_di" bpmnElement="G5" isMarkerVisible="true"><dc:Bounds x="3750" y="1115" width="50" height="50" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T19_di" bpmnElement="T19"><dc:Bounds x="3880" y="1055" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T20_di" bpmnElement="T20"><dc:Bounds x="3880" y="1155" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T21_di" bpmnElement="T21"><dc:Bounds x="4050" y="1055" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T24_di" bpmnElement="T24"><dc:Bounds x="4050" y="1155" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E4_di" bpmnElement="E4"><dc:Bounds x="4267" y="1172" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T22_di" bpmnElement="T22"><dc:Bounds x="4220" y="505" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IE1_di" bpmnElement="IE1"><dc:Bounds x="4437" y="522" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="T23_di" bpmnElement="T23"><dc:Bounds x="4560" y="905" width="130" height="70" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="E3_di" bpmnElement="E3"><dc:Bounds x="4777" y="922" width="36" height="36" /></bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="F1_di" bpmnElement="F1"><di:waypoint x="223" y="140" /><di:waypoint x="310" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F2_di" bpmnElement="F2"><di:waypoint x="440" y="140" /><di:waypoint x="520" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F3_di" bpmnElement="F3"><di:waypoint x="545" y="165" /><di:waypoint x="545" y="195" /><di:waypoint x="650" y="195" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F4_di" bpmnElement="F4"><di:waypoint x="570" y="140" /><di:waypoint x="860" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F5_di" bpmnElement="F5"><di:waypoint x="780" y="195" /><di:waypoint x="838" y="195" /><di:waypoint x="838" y="140" /><di:waypoint x="860" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F6_di" bpmnElement="F6"><di:waypoint x="910" y="140" /><di:waypoint x="990" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F7_di" bpmnElement="F7"><di:waypoint x="1120" y="140" /><di:waypoint x="1138" y="140" /><di:waypoint x="1138" y="340" /><di:waypoint x="1160" y="340" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F8_di" bpmnElement="F8"><di:waypoint x="1290" y="340" /><di:waypoint x="1308" y="340" /><di:waypoint x="1308" y="540" /><di:waypoint x="1330" y="540" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F9_di" bpmnElement="F9"><di:waypoint x="1460" y="540" /><di:waypoint x="1540" y="540" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F10_di" bpmnElement="F10"><di:waypoint x="1565" y="515" /><di:waypoint x="1565" y="490" /><di:waypoint x="1670" y="490" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F11_di" bpmnElement="F11"><di:waypoint x="1565" y="565" /><di:waypoint x="1565" y="590" /><di:waypoint x="1670" y="590" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F12_di" bpmnElement="F12"><di:waypoint x="1800" y="590" /><di:waypoint x="1887" y="590" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F13_di" bpmnElement="F13"><di:waypoint x="1800" y="490" /><di:waypoint x="1818" y="490" /><di:waypoint x="1818" y="140" /><di:waypoint x="1840" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F14_di" bpmnElement="F14"><di:waypoint x="1970" y="140" /><di:waypoint x="1988" y="140" /><di:waypoint x="1988" y="740" /><di:waypoint x="2010" y="740" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F15_di" bpmnElement="F15"><di:waypoint x="2140" y="740" /><di:waypoint x="2158" y="740" /><di:waypoint x="2158" y="540" /><di:waypoint x="2180" y="540" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F16_di" bpmnElement="F16"><di:waypoint x="2310" y="540" /><di:waypoint x="2390" y="540" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F17_di" bpmnElement="F17"><di:waypoint x="2415" y="515" /><di:waypoint x="2415" y="490" /><di:waypoint x="2520" y="490" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F18_di" bpmnElement="F18"><di:waypoint x="2415" y="565" /><di:waypoint x="2415" y="590" /><di:waypoint x="2520" y="590" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F19_di" bpmnElement="F19"><di:waypoint x="2650" y="590" /><di:waypoint x="2737" y="590" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F20_di" bpmnElement="F20"><di:waypoint x="2650" y="490" /><di:waypoint x="2668" y="490" /><di:waypoint x="2668" y="940" /><di:waypoint x="2690" y="940" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F21_di" bpmnElement="F21"><di:waypoint x="2820" y="940" /><di:waypoint x="2838" y="940" /><di:waypoint x="2838" y="1140" /><di:waypoint x="2860" y="1140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F22_di" bpmnElement="F22"><di:waypoint x="2990" y="1140" /><di:waypoint x="3008" y="1140" /><di:waypoint x="3008" y="540" /><di:waypoint x="3030" y="540" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F23_di" bpmnElement="F23"><di:waypoint x="3160" y="540" /><di:waypoint x="3178" y="540" /><di:waypoint x="3178" y="340" /><di:waypoint x="3200" y="340" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F24_di" bpmnElement="F24"><di:waypoint x="3330" y="340" /><di:waypoint x="3348" y="340" /><di:waypoint x="3348" y="140" /><di:waypoint x="3370" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F25_di" bpmnElement="F25"><di:waypoint x="3500" y="140" /><di:waypoint x="3540" y="140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F26_di" bpmnElement="F26"><di:waypoint x="3670" y="140" /><di:waypoint x="3728" y="140" /><di:waypoint x="3728" y="1140" /><di:waypoint x="3750" y="1140" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F27_di" bpmnElement="F27"><di:waypoint x="3775" y="1115" /><di:waypoint x="3775" y="1090" /><di:waypoint x="3880" y="1090" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F28_di" bpmnElement="F28"><di:waypoint x="3775" y="1165" /><di:waypoint x="3775" y="1190" /><di:waypoint x="3880" y="1190" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F29_di" bpmnElement="F29"><di:waypoint x="4010" y="1090" /><di:waypoint x="4050" y="1090" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F30_di" bpmnElement="F30"><di:waypoint x="4010" y="1190" /><di:waypoint x="4050" y="1190" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F31_di" bpmnElement="F31"><di:waypoint x="4180" y="1190" /><di:waypoint x="4267" y="1190" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F32_di" bpmnElement="F32"><di:waypoint x="4180" y="1090" /><di:waypoint x="4198" y="1090" /><di:waypoint x="4198" y="540" /><di:waypoint x="4220" y="540" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F33_di" bpmnElement="F33"><di:waypoint x="4350" y="540" /><di:waypoint x="4437" y="540" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F34_di" bpmnElement="F34"><di:waypoint x="4473" y="540" /><di:waypoint x="4538" y="540" /><di:waypoint x="4538" y="940" /><di:waypoint x="4560" y="940" /></bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="F35_di" bpmnElement="F35"><di:waypoint x="4690" y="940" /><di:waypoint x="4777" y="940" /></bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

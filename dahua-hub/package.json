@@ -1,0 +1,22 @@
+{
+  "name": "restblu-dahua-hub",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Servicio central RestBlu para terminales Dahua conectados por Auto Register.",
+  "type": "module",
+  "scripts": {
+    "start": "node src/main.mjs",
+    "dev": "node --watch src/main.mjs",
+    "fake-device": "node scripts/fake-device.mjs",
+    "seed": "node scripts/seed-dev.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check": "node --check src/main.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "mssql": "^11.0.2"
+  }
+}

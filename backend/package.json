@@ -1,0 +1,24 @@
+{
+  "name": "restblu-gestor-local",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs",
+    "check": "node --check server.mjs && node --check src/server/index.mjs && node --check public/assets/js/app.js",
+    "check:setup": "node scripts/check-setup.mjs",
+    "test": "node --test test/*.test.mjs",
+    "verify:database": "node database/verify-database.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "firebase-admin": "^14.3.0",
+    "mssql": "^11.0.2",
+    "nodemailer": "^10.0.1",
+    "pdfkit": "^0.20.2",
+    "qrcode": "^1.5.4"
+  }
+}

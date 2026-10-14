@@ -1,0 +1,96 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: #f5f8f7;
+  --foreground: #102d3f;
+  --card: #fff;
+  --card-foreground: #102d3f;
+  --popover: #fff;
+  --popover-foreground: #102d3f;
+  --primary: #0b6871;
+  --primary-foreground: #fff;
+  --secondary: #eaf2f1;
+  --secondary-foreground: #123849;
+  --muted: #eef5f4;
+  --muted-foreground: #66818a;
+  --accent: #e1f3f0;
+  --accent-foreground: #0b6871;
+  --destructive: #c94f45;
+  --border: #d9e8e6;
+  --input: #d9e8e6;
+  --ring: #48d1c5;
+  --radius: 0.75rem;
+}
+* {
+  border-color: var(--border);
+}
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+button {
+  cursor: pointer;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm;
+  }
+
+  body {
+    background: #fff !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .reservation-overlay,
+  .reservation-overlay * {
+    visibility: visible;
+  }
+
+  .reservation-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  .reservation-document {
+    width: 100% !important;
+    max-width: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .reservation-document header {
+    break-inside: avoid;
+  }
+
+  .reservation-document section,
+  .reservation-document aside {
+    break-inside: avoid;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+}
