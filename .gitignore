@@ -17,7 +17,8 @@
 !**/.env.example
 !**/.env.local.example
 **/local.properties
-**/data/
+backend/data/
+dahua-hub/data/
 **/uploads/
 **/backups/
 **/respaldos/
