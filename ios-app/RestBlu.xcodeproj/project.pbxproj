@@ -1,0 +1,87 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 60;
+	objects = {
+/* Begin PBXBuildFile section */
+		80331C73DE316AB1C69E48C3 /* AccessView.swift */ = { isa = PBXBuildFile; fileRef = 4A912AB14C5F834598E9235E /* AccessView.swift */; };
+		0F5B93A29E6CFA7A748AD4C9 /* BluView.swift */ = { isa = PBXBuildFile; fileRef = D7102F1F78DB60585B6D3E05 /* BluView.swift */; };
+		0E1162EB4CB109EF188FE735 /* CatalogView.swift */ = { isa = PBXBuildFile; fileRef = 425F60124A707B9C330F6262 /* CatalogView.swift */; };
+		D46E857E51FECA0FE8ECA11A /* FaceEnrollmentView.swift */ = { isa = PBXBuildFile; fileRef = C5178083C81E6601CAAEF6BD /* FaceEnrollmentView.swift */; };
+		2452A2FE7492FC0FF239A3E6 /* FirestoreCodec.swift */ = { isa = PBXBuildFile; fileRef = 029290702FE86F7A4705DD26 /* FirestoreCodec.swift */; };
+		D1B1E93CC8825EE71A6BC9AF /* Models.swift */ = { isa = PBXBuildFile; fileRef = 89F45C602E5BB3156C3F5558 /* Models.swift */; };
+		070FACCE39B79AAC0E085839 /* PhoneAccessKey.swift */ = { isa = PBXBuildFile; fileRef = 8F897133176DFF5836791857 /* PhoneAccessKey.swift */; };
+		831DCD7D883A582449737356 /* ProfileView.swift */ = { isa = PBXBuildFile; fileRef = FD3AEFF4D9895D4FA4811578 /* ProfileView.swift */; };
+		ECF05AD5E9B0752E1FA3EAE7 /* ReservationsView.swift */ = { isa = PBXBuildFile; fileRef = B267CCEFE0388A303D6890B5 /* ReservationsView.swift */; };
+		B2E6C5957D6C84F622039690 /* RestBluAPI+PaymentsAccess.swift */ = { isa = PBXBuildFile; fileRef = 2E78A4CD04CEC996C7E79370 /* RestBluAPI+PaymentsAccess.swift */; };
+		74BFC6F1E9EF04E29A6BD391 /* RestBluAPI+Reservations.swift */ = { isa = PBXBuildFile; fileRef = 9EA8D158E92E6D49D5785E43 /* RestBluAPI+Reservations.swift */; };
+		27871F9EA33A4F84CA492592 /* RestBluAPI.swift */ = { isa = PBXBuildFile; fileRef = 0F8F28F8FDFCAF8B1DE1FBBB /* RestBluAPI.swift */; };
+		64A339278506CF8CAEE844FC /* RestBluApp.swift */ = { isa = PBXBuildFile; fileRef = D1B58EBC2CBB3B6BBE9CC755 /* RestBluApp.swift */; };
+		0E361E7813375DFA3678C52F /* RestBluStore.swift */ = { isa = PBXBuildFile; fileRef = 0DC31D92ABE519F21E8773EC /* RestBluStore.swift */; };
+		95220384773AAE5B229AA82A /* RootView.swift */ = { isa = PBXBuildFile; fileRef = 5A7B4E80982F492608A72449 /* RootView.swift */; };
+		03B2C156383428BFBCCA8110 /* SecureSession.swift */ = { isa = PBXBuildFile; fileRef = 629270E74913E8ED048A403D /* SecureSession.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXBuildFile resources section */
+		716E9590E60B3AFA6E62BF18 /* Assets.xcassets */ = { isa = PBXBuildFile; fileRef = 3685E330EC5277A9DD5661C6 /* Assets.xcassets */; };
+/* End PBXBuildFile resources section */
+
+/* Begin PBXFileReference section */
+		4A912AB14C5F834598E9235E /* AccessView.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessView.swift; sourceTree = "<group>"; };
+		D7102F1F78DB60585B6D3E05 /* BluView.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BluView.swift; sourceTree = "<group>"; };
+		425F60124A707B9C330F6262 /* CatalogView.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CatalogView.swift; sourceTree = "<group>"; };
+		C5178083C81E6601CAAEF6BD /* FaceEnrollmentView.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceEnrollmentView.swift; sourceTree = "<group>"; };
+		029290702FE86F7A4705DD26 /* FirestoreCodec.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirestoreCodec.swift; sourceTree = "<group>"; };
+		89F45C602E5BB3156C3F5558 /* Models.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		8F897133176DFF5836791857 /* PhoneAccessKey.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneAccessKey.swift; sourceTree = "<group>"; };
+		FD3AEFF4D9895D4FA4811578 /* ProfileView.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		B267CCEFE0388A303D6890B5 /* ReservationsView.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReservationsView.swift; sourceTree = "<group>"; };
+		2E78A4CD04CEC996C7E79370 /* RestBluAPI+PaymentsAccess.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestBluAPI+PaymentsAccess.swift; sourceTree = "<group>"; };
+		9EA8D158E92E6D49D5785E43 /* RestBluAPI+Reservations.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestBluAPI+Reservations.swift; sourceTree = "<group>"; };
+		0F8F28F8FDFCAF8B1DE1FBBB /* RestBluAPI.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestBluAPI.swift; sourceTree = "<group>"; };
+		D1B58EBC2CBB3B6BBE9CC755 /* RestBluApp.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestBluApp.swift; sourceTree = "<group>"; };
+		0DC31D92ABE519F21E8773EC /* RestBluStore.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RestBluStore.swift; sourceTree = "<group>"; };
+		5A7B4E80982F492608A72449 /* RootView.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		629270E74913E8ED048A403D /* SecureSession.swift */ = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureSession.swift; sourceTree = "<group>"; };
+		EF61687EE07F521749F45DFA /* Info.plist */ = { isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		3685E330EC5277A9DD5661C6 /* Assets.xcassets */ = { isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		38A007151ABE87CC01A5B6E9 /* RestBlu.app */ = { isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RestBlu.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		870B3294C0CBD48AF6BBCC1B /* Main Group */ = { isa = PBXGroup; children = (96DC7B6B5526E30EFB51C316 /* RestBlu */, 615B463D1028E4E24B674CF7 /* Products */); sourceTree = "<group>"; };
+		96DC7B6B5526E30EFB51C316 /* RestBlu */ = { isa = PBXGroup; children = (4A912AB14C5F834598E9235E /* AccessView.swift */, D7102F1F78DB60585B6D3E05 /* BluView.swift */, 425F60124A707B9C330F6262 /* CatalogView.swift */, C5178083C81E6601CAAEF6BD /* FaceEnrollmentView.swift */, 029290702FE86F7A4705DD26 /* FirestoreCodec.swift */, 89F45C602E5BB3156C3F5558 /* Models.swift */, 8F897133176DFF5836791857 /* PhoneAccessKey.swift */, FD3AEFF4D9895D4FA4811578 /* ProfileView.swift */, B267CCEFE0388A303D6890B5 /* ReservationsView.swift */, 2E78A4CD04CEC996C7E79370 /* RestBluAPI+PaymentsAccess.swift */, 9EA8D158E92E6D49D5785E43 /* RestBluAPI+Reservations.swift */, 0F8F28F8FDFCAF8B1DE1FBBB /* RestBluAPI.swift */, D1B58EBC2CBB3B6BBE9CC755 /* RestBluApp.swift */, 0DC31D92ABE519F21E8773EC /* RestBluStore.swift */, 5A7B4E80982F492608A72449 /* RootView.swift */, 629270E74913E8ED048A403D /* SecureSession.swift */, EF61687EE07F521749F45DFA /* Info.plist */, 3685E330EC5277A9DD5661C6 /* Assets.xcassets */); path = RestBlu; sourceTree = "<group>"; };
+		615B463D1028E4E24B674CF7 /* Products */ = { isa = PBXGroup; children = (38A007151ABE87CC01A5B6E9 /* RestBlu.app */); name = Products; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0E8A3AD980EC179856012B7E /* RestBlu */ = { isa = PBXNativeTarget; buildConfigurationList = D56CFE3901D8DE50695BDE4C /* Configurations */; buildPhases = (F612CD2E22E187AC48B5913C /* Sources */, 86F6FE2DD6E869C1842A14B3 /* Resources */); buildRules = (); dependencies = (); name = RestBlu; productName = RestBlu; productReference = 38A007151ABE87CC01A5B6E9 /* RestBlu.app */; productType = "com.apple.product-type.application"; };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		98F54143AB4E86B28C3AFEE0 /* Project object */ = { isa = PBXProject; attributes = { BuildIndependentTargetsInParallel = YES; LastUpgradeCheck = 1500; TargetAttributes = { 0E8A3AD980EC179856012B7E = { CreatedOnToolsVersion = 15.0; }; }; }; buildConfigurationList = 43542476A0E9EEC933929637 /* Configurations */; compatibilityVersion = "Xcode 15.0"; developmentRegion = es; hasScannedForEncodings = 0; knownRegions = (es, en, Base); mainGroup = 870B3294C0CBD48AF6BBCC1B /* Main Group */; productRefGroup = 615B463D1028E4E24B674CF7 /* Products */; projectDirPath = ""; projectRoot = ""; targets = (0E8A3AD980EC179856012B7E /* RestBlu */); };
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F612CD2E22E187AC48B5913C /* Sources */ = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (80331C73DE316AB1C69E48C3 /* AccessView.swift */, 0F5B93A29E6CFA7A748AD4C9 /* BluView.swift */, 0E1162EB4CB109EF188FE735 /* CatalogView.swift */, D46E857E51FECA0FE8ECA11A /* FaceEnrollmentView.swift */, 2452A2FE7492FC0FF239A3E6 /* FirestoreCodec.swift */, D1B1E93CC8825EE71A6BC9AF /* Models.swift */, 070FACCE39B79AAC0E085839 /* PhoneAccessKey.swift */, 831DCD7D883A582449737356 /* ProfileView.swift */, ECF05AD5E9B0752E1FA3EAE7 /* ReservationsView.swift */, B2E6C5957D6C84F622039690 /* RestBluAPI+PaymentsAccess.swift */, 74BFC6F1E9EF04E29A6BD391 /* RestBluAPI+Reservations.swift */, 27871F9EA33A4F84CA492592 /* RestBluAPI.swift */, 64A339278506CF8CAEE844FC /* RestBluApp.swift */, 0E361E7813375DFA3678C52F /* RestBluStore.swift */, 95220384773AAE5B229AA82A /* RootView.swift */, 03B2C156383428BFBCCA8110 /* SecureSession.swift */); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXResourcesBuildPhase section */
+		86F6FE2DD6E869C1842A14B3 /* Resources */ = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (716E9590E60B3AFA6E62BF18 /* Assets.xcassets */); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		D12546C7310DEE778E55E187 /* Debug */ = { isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 17.0; DEBUG_INFORMATION_FORMAT = dwarf; SWIFT_OPTIMIZATION_LEVEL = "-Onone"; }; name = Debug; };
+		AA23A758EC6A71B7321371F8 /* Release */ = { isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; SDKROOT = iphoneos; IPHONEOS_DEPLOYMENT_TARGET = 17.0; DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym"; SWIFT_OPTIMIZATION_LEVEL = "-O"; }; name = Release; };
+		E1698793B8B09B32821D3120 /* Debug */ = { isa = XCBuildConfiguration; buildSettings = { ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = RestBlu/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = cl.restblu.huesped.ios; PRODUCT_NAME = RestBlu; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1; SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG; }; name = Debug; };
+		FFACE85B9B63AB569355131D /* Release */ = { isa = XCBuildConfiguration; buildSettings = { ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = RestBlu/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = cl.restblu.huesped.ios; PRODUCT_NAME = RestBlu; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = 1; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		43542476A0E9EEC933929637 /* Project configurations */ = { isa = XCConfigurationList; buildConfigurations = (D12546C7310DEE778E55E187 /* Debug */, AA23A758EC6A71B7321371F8 /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		D56CFE3901D8DE50695BDE4C /* Target configurations */ = { isa = XCConfigurationList; buildConfigurations = (E1698793B8B09B32821D3120 /* Debug */, FFACE85B9B63AB569355131D /* Release */); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = 98F54143AB4E86B28C3AFEE0 /* Project object */;
+}

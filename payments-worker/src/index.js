@@ -16,6 +16,7 @@ const INTEGRATION_API_KEY = '579B532A7440BB0C9079DED94D31EA1615BACEB566103322646
 const RESERVATION_ID = /^(LS|RB)-[A-Z0-9-]{10,23}$/;
 // La app Android vuelve por este esquema propio (ver AndroidManifest).
 const APP_RETURN = 'restblu://webpay';
+const IOS_RETURN = 'restblu-ios://webpay';
 const APP_PACKAGE = 'cl.lumastay.huesped';
 const WEBPAY_TOKEN = /^[A-Za-z0-9]{20,100}$/;
 
@@ -83,10 +84,11 @@ async function createTransaction(request, env) {
     return json(request, env, 400, { error: 'Monto inválido para Webpay.' });
   }
   const forApp = String(input.returnTo || '') === APP_RETURN;
+  const forIOS = String(input.returnTo || '') === IOS_RETURN;
   const returnUrl = new URL('/webpay/return', request.url);
   returnUrl.searchParams.set('r', reservationId);
-  if (forApp) {
-    returnUrl.searchParams.set('app', '1');
+  if (forApp || forIOS) {
+    returnUrl.searchParams.set('app', forIOS ? 'ios' : '1');
   } else {
     const returnTo = safeReturnUrl(String(input.returnTo || ''), env);
     returnUrl.searchParams.set('to', `${returnTo.origin}${returnTo.pathname}`);
@@ -174,6 +176,11 @@ async function handleReturn(request, env) {
   }
   const result = new URLSearchParams({ pago: RESERVATION_ID.test(reservationId) ? reservationId : '', estado });
   if (token && (estado === 'aprobado' || estado === 'pendiente')) result.set('token', token);
+  if (params.get('app') === 'ios') {
+    const appUrl = `${IOS_RETURN}?${result}`;
+    const title = estado === 'aprobado' ? 'Pago aprobado' : estado === 'anulado' ? 'Pago cancelado' : estado === 'expirado' ? 'Tiempo agotado' : estado === 'pendiente' ? 'Pago en verificación' : 'Pago rechazado';
+    return html(`<h1>${title}</h1><p>Vuelve a RestBlu para consultar tu reserva.</p><a class="button" href="${escapeHtml(appUrl)}">Volver a RestBlu para iPhone</a>`);
+  }
   if (params.get('app') === '1') {
     // Un enlace de esquema propio se abre también en navegadores Android que
     // no admiten intent:// (por ejemplo, al volver manualmente desde Webpay).

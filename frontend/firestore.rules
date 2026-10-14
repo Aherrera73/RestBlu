@@ -101,7 +101,7 @@ service cloud.firestore {
         request.resource.data.id == reservationId &&
         request.resource.data.ownerUid == request.auth.uid &&
         request.resource.data.syncStatus == 'pending' &&
-        request.resource.data.source in ['firebase-hosting', 'android-app'] &&
+        request.resource.data.source in ['firebase-hosting', 'android-app', 'ios-app'] &&
         request.resource.data.schemaVersion in [1, 2, 3] &&
         request.resource.data.guestName is string &&
         request.resource.data.guestName.size() >= 2 &&

@@ -56,3 +56,19 @@ test('un pago fallido sí se muestra como rechazado', async (t) => {
   const result = await response.json();
   assert.equal(result.state, 'rejected');
 });
+
+test('iPhone recibe un retorno propio sin intentar abrir la app Android', async (t) => {
+  const original = globalThis.fetch;
+  t.after(() => { globalThis.fetch = original; });
+  globalThis.fetch = async () => Response.json({ token, url: 'https://webpay3g.transbank.cl/webpayserver/initTransaction' });
+  const created = await worker.fetch(new Request('https://restblu-pagos.example/webpay/create', {
+    method: 'POST', body: JSON.stringify({ reservationId, amount: 50000, returnTo: 'restblu-ios://webpay' }),
+  }), env);
+  assert.equal(created.status, 200);
+  const checkout = await created.json();
+  assert.match(checkout.payUrl, /\/webpay\/go\?/);
+  globalThis.fetch = async () => Response.json({ status: 'AUTHORIZED', response_code: 0 });
+  const page = await (await worker.fetch(new Request(`https://restblu-pagos.example/webpay/return?r=${reservationId}&app=ios&token_ws=${token}`), env)).text();
+  assert.match(page, /restblu-ios:\/\/webpay\?/);
+  assert.doesNotMatch(page, /intent:\/\//);
+});
