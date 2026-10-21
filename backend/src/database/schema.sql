@@ -337,3 +337,20 @@ CREATE TABLE IF NOT EXISTS ia_valoraciones (
   owner_uid TEXT NOT NULL DEFAULT '',
   creado_at TEXT NOT NULL
 );
+
+-- Acceso privado de titulares de alojamientos, separado de owner_uid huésped.
+CREATE TABLE IF NOT EXISTS propietarios (
+  id TEXT PRIMARY KEY,
+  firebase_uid TEXT NOT NULL UNIQUE,
+  nombre TEXT NOT NULL,
+  correo TEXT NOT NULL COLLATE NOCASE UNIQUE,
+  telefono TEXT NOT NULL DEFAULT '',
+  activo INTEGER NOT NULL DEFAULT 1 CHECK (activo IN (0, 1)),
+  creado_at TEXT NOT NULL,
+  actualizado_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS propietario_alojamientos (
+  alojamiento_id INTEGER PRIMARY KEY REFERENCES alojamientos(id) ON DELETE CASCADE,
+  propietario_id TEXT NOT NULL REFERENCES propietarios(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_propietario_alojamientos ON propietario_alojamientos(propietario_id);

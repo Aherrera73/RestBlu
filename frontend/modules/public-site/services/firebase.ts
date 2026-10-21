@@ -2,6 +2,7 @@ import {
   FIREBASE_API_KEY,
   FIREBASE_SESSION_KEY,
   FIRESTORE_DOCUMENTS,
+  LOCAL_FIREBASE_AUTH,
 } from '../config';
 import type {
   FirebaseSession,
@@ -9,6 +10,7 @@ import type {
   Property,
   ReservationProcessingStatus,
 } from '../domain/types';
+import { firebaseIdentityUrl, firebaseTokenUrl } from './firebase-auth-endpoints';
 
 export function usesLocalManager() {
   return typeof window !== 'undefined' &&
@@ -28,9 +30,10 @@ export async function ensureFirebaseSession(): Promise<FirebaseSession> {
     try {
       if (refreshToken) {
         return await fetch(
-          `https://securetoken.googleapis.com/v1/token?key=${encodeURIComponent(FIREBASE_API_KEY)}`,
+          firebaseTokenUrl(FIREBASE_API_KEY, LOCAL_FIREBASE_AUTH),
           {
             method: 'POST',
+            credentials: 'omit',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
               grant_type: 'refresh_token',
@@ -40,9 +43,10 @@ export async function ensureFirebaseSession(): Promise<FirebaseSession> {
         );
       }
       return await fetch(
-        `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${encodeURIComponent(FIREBASE_API_KEY)}`,
+        firebaseIdentityUrl('accounts:signUp', FIREBASE_API_KEY, LOCAL_FIREBASE_AUTH),
         {
           method: 'POST',
+          credentials: 'omit',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ returnSecureToken: true }),
         },

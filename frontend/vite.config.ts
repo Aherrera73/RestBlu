@@ -1,13 +1,19 @@
 import { sites } from '@openai/sites-vite-plugin';
 import tailwindcss from '@tailwindcss/postcss';
 import vinext from 'vinext';
-import { defineConfig } from 'vite';
-import hostingConfig from './.openai/hosting.json';
+import { defineConfig, type ProxyOptions } from 'vite';
+import { existsSync, readFileSync } from 'node:fs';
 
 const SITE_CREATOR_PLACEHOLDER_DATABASE_ID =
   '00000000-0000-4000-8000-000000000000';
 
-const { d1, r2 } = hostingConfig;
+// La configuración del editor es opcional al clonar o descomprimir el proyecto.
+// Firebase Hosting no utiliza estos enlaces de almacenamiento de Cloudflare.
+const hostingConfigPath = new URL('./.openai/hosting.json', import.meta.url);
+const hostingConfig = existsSync(hostingConfigPath)
+  ? JSON.parse(readFileSync(hostingConfigPath, 'utf8')) as { d1?: string | null; r2?: string | null }
+  : {};
+const { d1 = null, r2 = null } = hostingConfig;
 
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === 'seatbelt';
@@ -46,9 +52,33 @@ export default defineConfig(async () => {
 
   return {
     css: { postcss: { plugins: [tailwindcss()] } },
-    server: isCodexSeatbeltSandbox
-      ? { watch: { useFsEvents: false, usePolling: true } }
-      : undefined,
+    server: {
+      ...(isCodexSeatbeltSandbox ? { watch: { useFsEvents: false, usePolling: true } } : {}),
+      proxy: {
+        '^/__restblu/firebase/identity/accounts:(signInWithPassword|signUp|sendOobCode|delete|update|lookup)(?:\\?|$)': {
+          target: 'https://identitytoolkit.googleapis.com',
+          changeOrigin: true,
+          secure: true,
+          proxyTimeout: 15_000,
+          rewrite: (path) => path.replace('/__restblu/firebase/identity/', '/v1/'),
+          configure: (proxy) => proxy.on('proxyReq', (request) => {
+            request.removeHeader('cookie');
+            request.removeHeader('authorization');
+          }),
+        },
+        '^/__restblu/firebase/token(?:\\?|$)': {
+          target: 'https://securetoken.googleapis.com',
+          changeOrigin: true,
+          secure: true,
+          proxyTimeout: 15_000,
+          rewrite: (path) => path.replace('/__restblu/firebase/token', '/v1/token'),
+          configure: (proxy) => proxy.on('proxyReq', (request) => {
+            request.removeHeader('cookie');
+            request.removeHeader('authorization');
+          }),
+        },
+      } satisfies Record<string, ProxyOptions>,
+    },
     plugins: [
       vinext(),
       sites(),

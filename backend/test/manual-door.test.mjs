@@ -60,6 +60,7 @@ test('la apertura manual sólo acciona el terminal exclusivo desde el gestor loc
     env: {
       ...process.env,
       RESTBLU_ADMIN_PORT: String(port),
+      RESTBLU_MANAGER_PASSWORD: 'clave-de-prueba-gestor-0123456789abcdef',
       RESTBLU_DB_PATH: join(temp, 'doors.sqlite'),
       RESTBLU_DB_ENGINE: 'sqlite',
       RESTBLU_ENV_PATH: configPath,
@@ -78,7 +79,11 @@ test('la apertura manual sólo acciona el terminal exclusivo desde el gestor loc
   });
   const endpoint = (id) => `http://127.0.0.1:${port}/api/admin/properties/${id}/open-door`;
   const open = (id, headers = {}) => fetch(endpoint(id), {
-    method: 'POST', headers: { 'X-RestBlu-Manager-Action': 'open-door', ...headers },
+    method: 'POST', headers: {
+      'X-RestBlu-Manager-Action': 'open-door',
+      Authorization: `Basic ${Buffer.from('manager:clave-de-prueba-gestor-0123456789abcdef').toString('base64')}`,
+      ...headers,
+    },
   });
   try {
     let ready = false;

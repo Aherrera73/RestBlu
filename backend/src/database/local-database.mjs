@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { dirname } from 'node:path';
 import { mkdirSync } from 'node:fs';
+import { ownerFromRow, OwnerError } from '../owners/owner-service.mjs';
 import {
   CUSTOMER_COLUMNS, PROPERTY_COLUMNS, RESERVATION_COLUMNS, SCHEMA_VERSION,
   accessEventFromRow, customerFromRow, customerValues, integer, now, planCollection,
@@ -124,8 +125,8 @@ export function createLocalDatabase({ databasePath, legacyJsonPath, schemaPath }
     setMetadata('reservation_guest_snapshot_backfill', '1');
   }
 
-  if (integer(metadata('schema_version'), 0) < 9) {
-    setMetadata('schema_version', '9');
+  if (integer(metadata('schema_version'), 0) < Number(SCHEMA_VERSION)) {
+    setMetadata('schema_version', SCHEMA_VERSION);
   }
 
 
@@ -247,17 +248,50 @@ export function createLocalDatabase({ databasePath, legacyJsonPath, schemaPath }
     }
   }
 
+  function listOwners() {
+    const assignments = sqlite.prepare('SELECT alojamiento_id FROM propietario_alojamientos WHERE propietario_id = ? ORDER BY alojamiento_id');
+    return sqlite.prepare('SELECT * FROM propietarios ORDER BY nombre COLLATE NOCASE, id').all()
+      .map((row) => ownerFromRow(row, assignments.all(row.id).map((item) => item.alojamiento_id)));
+  }
+
+  function saveOwner(owner) {
+    sqlite.exec('BEGIN IMMEDIATE;');
+    try {
+      sqlite.prepare(`INSERT INTO propietarios (id, firebase_uid, nombre, correo, telefono, activo, creado_at, actualizado_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET nombre = excluded.nombre, telefono = excluded.telefono,
+          activo = excluded.activo, actualizado_at = excluded.actualizado_at`)
+        .run(owner.id, owner.uid, owner.name, owner.email, owner.phone, owner.active ? 1 : 0, owner.createdAt, owner.updatedAt);
+      sqlite.prepare('DELETE FROM propietario_alojamientos WHERE propietario_id = ?').run(owner.id);
+      const assignment = sqlite.prepare('INSERT INTO propietario_alojamientos (alojamiento_id, propietario_id) VALUES (?, ?)');
+      for (const propertyId of owner.propertyIds) assignment.run(propertyId, owner.id);
+      setMetadata('updated_at', now());
+      sqlite.exec('COMMIT;');
+    } catch (error) {
+      sqlite.exec('ROLLBACK;');
+      if (/UNIQUE constraint failed/.test(error.message)) {
+        throw new OwnerError('El correo, la cuenta o una propiedad ya se asignaron a otro propietario. Actualiza la lista.', 409);
+      }
+      throw error;
+    }
+    return listOwners().find((item) => item.id === owner.id);
+  }
+
   if (metadata('legacy_import_complete') !== '1') {
     if (existsSync(legacyJsonPath)) {
-      saveDatabase(JSON.parse(readFileSync(legacyJsonPath, 'utf8')));
+      const legacy = JSON.parse(readFileSync(legacyJsonPath, 'utf8'));
+      saveDatabase(legacy);
+      for (const owner of legacy.owners || []) saveOwner(owner);
     } else {
-      setMetadata('schema_version', '9');
+      setMetadata('schema_version', SCHEMA_VERSION);
       setMetadata('updated_at', now());
       setMetadata('legacy_import_complete', '1');
     }
   }
 
   return {
+    listOwners,
+    saveOwner,
     engine: 'SQLite',
     storage: 'sqlite',
     path: databasePath,

@@ -58,19 +58,22 @@ function shortDate(value: string) {
 }
 
 export default function PublicAiAssistant({
+  open,
+  onOpenChange: setOpen,
   properties,
   search,
   selectedProperty,
   onOpenProperty,
   onReserveProperty,
 }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   properties: Property[];
   search: SearchCriteria;
   selectedProperty?: Property | null;
   onOpenProperty: (property: Property) => void;
   onReserveProperty: (property: Property, stay: AssistantStay) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([welcome]);
   const [loading, setLoading] = useState(false);
@@ -345,13 +348,13 @@ export default function PublicAiAssistant({
 
       <button
         type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="ml-auto flex items-center gap-2 rounded-full bg-[#0b6871] px-4 py-3.5 font-black text-white shadow-[0_14px_35px_rgba(8,72,80,.35)] transition hover:-translate-y-0.5 hover:bg-[#07565e]"
+        onClick={() => setOpen(!open)}
+        className="ml-auto flex size-12 items-center justify-center rounded-full bg-[#0b6871] font-black text-white shadow-[0_14px_35px_rgba(8,72,80,.35)] transition hover:-translate-y-0.5 hover:bg-[#07565e] sm:h-auto sm:w-auto sm:gap-2 sm:px-4 sm:py-3.5"
         aria-expanded={open}
         aria-label={open ? 'Cerrar asistente RestBlu IA' : 'Abrir asistente RestBlu IA'}
       >
         {open ? <X className="size-5" /> : <MessageCircleMore className="size-5" />}
-        <span className="text-sm">{open ? 'Cerrar' : 'Pregúntale a Blu'}</span>
+        <span className="hidden text-sm sm:inline">{open ? 'Cerrar' : 'Pregúntale a Blu'}</span>
       </button>
     </section>
   );

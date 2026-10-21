@@ -3,11 +3,11 @@
 /* oxlint-disable next/no-img-element */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
   Bath,
   BedDouble,
-  Bot,
   CalendarDays,
   Check,
   CheckCircle2,
@@ -17,18 +17,17 @@ import {
   Download,
   FileText,
   Heart,
-  KeyRound,
   Mail,
   MapPin,
   Maximize2,
   MessageSquareMore,
+  Menu,
   Phone,
   QrCode,
   Search,
   ScanFace,
   ShieldCheck,
   SlidersHorizontal,
-  Sparkles,
   Star,
   UserRound,
   Users,
@@ -47,6 +46,7 @@ import type {
 import {
   initialSearch,
   LOCAL_DATA_API,
+  PAYMENTS_API,
 } from './config';
 import {
   formatCurrency,
@@ -75,7 +75,11 @@ import BiometricEnrollment from './components/BiometricEnrollment';
 import PropertyAvailabilityCalendar from './components/PropertyAvailabilityCalendar';
 import ReservationLookup from './components/ReservationLookup';
 import AccountScreen from './components/AccountScreen';
+import OwnerPortal from './components/OwnerPortal';
+import StayLanding from './components/StayLanding';
+import { Destinations, SupportCenter } from './components/ExploreSections';
 import { confirmWebpayPayment, startWebpayPayment } from './services/payments';
+import { isRecoverableWebpayReturn, recoverWebpayReturn, type WebpayReturn } from './services/webpay-return';
 import { ACCOUNT_CHANGED_EVENT, accountSession, currentAccount } from './services/account';
 import {
   loadCustomerProfile, loadCustomerReservations, saveCustomerProfile, saveFavorites, type CustomerReservation,
@@ -310,9 +314,11 @@ function restoreReservationFromStatus(
 const WEBPAY_VERIFICATION_KEY = 'restblu:webpay-verifying-reservation';
 const WEBPAY_RETURN_KEY = 'restblu:webpay-approved-return';
 
-export default function RestBluApp() {
+export default function RestBluApp({ initialScreen = 'inicio' }: { initialScreen?: Screen }) {
+  const reduceMotion = useReducedMotion();
   const paymentAttemptStorageKey = 'restblu:last-demo-payment-attempt-v2';
-  const [screen, setScreen] = useState<Screen>('inicio');
+  const [screen, setScreen] = useState<Screen>(initialScreen);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [filter, setFilter] = useState('Todos');
   const [selected, setSelected] = useState<Property | null>(null);
   const [saved, setSaved] = useState<number[]>([]);
@@ -415,7 +421,7 @@ export default function RestBluApp() {
   }, [passToOpen, account?.uid, account?.emailVerified]);
   // Vuelta desde Webpay (?pago=<reserva>&estado=...&token=...): se entrega el
   // token al gestor para que verifique el pago y luego se abre el pase.
-  const [webpayReturn, setWebpayReturn] = useState<{ id: string; estado: string; token: string } | null>(null);
+  const [webpayReturn, setWebpayReturn] = useState<WebpayReturn | null>(null);
   useEffect(() => {
     const url = new URL(window.location.href);
     const id = url.searchParams.get('pago') || '';
@@ -423,12 +429,11 @@ export default function RestBluApp() {
     const token = url.searchParams.get('token') || '';
     if (!id && !estado) {
       try {
-        const pending = JSON.parse(sessionStorage.getItem(WEBPAY_RETURN_KEY) || 'null') as { id?: string; estado?: string; token?: string } | null;
-        const pendingId = pending?.id || '';
-        if (pending?.estado === 'aprobado' && /^(LS|RB)-[A-Z0-9-]{10,50}$/.test(pendingId) && pending.token) {
+        const pending: unknown = JSON.parse(sessionStorage.getItem(WEBPAY_RETURN_KEY) || 'null');
+        if (isRecoverableWebpayReturn(pending)) {
           setScreen('cuenta');
-          setReturnReservationId(pendingId);
-          setWebpayReturn({ id: pendingId, estado: pending.estado, token: pending.token });
+          setReturnReservationId(pending.id);
+          setWebpayReturn(pending);
           return;
         }
       } catch {
@@ -446,14 +451,14 @@ export default function RestBluApp() {
     window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
     setScreen('cuenta');
     setReturnReservationId(id);
-    if (estado === 'aprobado' && /^(LS|RB)-[A-Z0-9-]{10,50}$/.test(id) && token) {
+    if (isRecoverableWebpayReturn({ id, estado, token })) {
       sessionStorage.setItem(WEBPAY_RETURN_KEY, JSON.stringify({ id, estado, token }));
     }
     setWebpayReturn({ id, estado, token });
   }, []);
   useEffect(() => {
     if (!webpayReturn || !account?.emailVerified) return;
-    const { id, estado, token } = webpayReturn;
+    const { id, estado } = webpayReturn;
     setWebpayReturn(null);
     let cloud = !usesLocalManager();
     try {
@@ -463,20 +468,35 @@ export default function RestBluApp() {
     } catch {
       // Sin datos guardados se usa el modo del sitio.
     }
-    if (estado !== 'aprobado' || !token || !/^(LS|RB)-[A-Z0-9-]{10,50}$/.test(id)) {
+    if (!isRecoverableWebpayReturn(webpayReturn)) {
       sessionStorage.removeItem(WEBPAY_RETURN_KEY);
       notice(estado === 'anulado'
         ? 'Cancelaste el pago en Webpay. Tu reserva sigue pendiente.'
         : estado === 'expirado'
           ? 'El tiempo para pagar en Webpay se agotó. Puedes intentarlo de nuevo.'
-          : 'Webpay rechazó el pago. Puedes intentarlo con otra tarjeta.');
+          : estado === 'rechazado'
+            ? 'Webpay rechazó el pago. Puedes intentarlo con otra tarjeta.'
+            : 'No fue posible identificar el resultado del pago. Consulta Mi cuenta antes de volver a pagar.');
       return;
     }
     localStorage.setItem(WEBPAY_VERIFICATION_KEY, id);
     setPaymentVerificationId(id);
-    notice('Pago aprobado en Webpay. Verás la reserva en Mi cuenta mientras se confirma; no vuelvas a pagar.');
-    void confirmWebpayPayment(id, token, cloud)
-      .then(() => { sessionStorage.removeItem(WEBPAY_RETURN_KEY); })
+    notice(estado === 'pendiente'
+      ? 'Estamos verificando el resultado del pago con Webpay. No vuelvas a pagar; consulta Mi cuenta.'
+      : 'Pago aprobado en Webpay. Verás la reserva en Mi cuenta mientras se confirma; no vuelvas a pagar.');
+    void recoverWebpayReturn(webpayReturn, PAYMENTS_API, (reservationId, webpayToken) => confirmWebpayPayment(reservationId, webpayToken, cloud))
+      .then((result) => {
+        if (result === 'pending') {
+          notice('Webpay todavía no confirma el resultado. Conservamos tu intento; recarga esta página para reconsultarlo. No vuelvas a pagar.');
+          return;
+        }
+        sessionStorage.removeItem(WEBPAY_RETURN_KEY);
+        if (result === 'rejected') {
+          if (localStorage.getItem(WEBPAY_VERIFICATION_KEY) === id) localStorage.removeItem(WEBPAY_VERIFICATION_KEY);
+          setPaymentVerificationId((current) => current === id ? '' : current);
+          notice('Webpay rechazó el pago. Puedes intentarlo con otra tarjeta.');
+        }
+      })
       .catch((error) => {
         notice(`${error instanceof Error ? error.message : 'La confirmación sigue pendiente.'} Consulta Mi cuenta y no vuelvas a pagar.`);
       });
@@ -678,7 +698,7 @@ export default function RestBluApp() {
   function go(next: Screen) {
     setSelected(null);
     setScreen(next);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
   }
   // Favoritos: con sesión se guardan en el perfil y se ven en todos los dispositivos.
   function toggleSaved(id: number) {
@@ -713,9 +733,9 @@ export default function RestBluApp() {
     }
     return true;
   }
-  function runSearch() {
-    if (!validateDates(search)) return;
-    setAppliedSearch({ ...search });
+  function runSearch(criteria: SearchCriteria = search) {
+    if (!validateDates(criteria)) return;
+    setAppliedSearch({ ...criteria });
     setFilter('Todos');
     setSelected(null);
     setScreen('catalogo');
@@ -725,6 +745,18 @@ export default function RestBluApp() {
     setSearch(initialSearch);
     setAppliedSearch(initialSearch);
     setFilter('Todos');
+  }
+  function exploreDestination(destination: string) {
+    // Explorar sigue disponible si el formulario conserva fechas incompletas.
+    const hasValidStay = search.checkIn && search.checkOut && getNightCount(search.checkIn, search.checkOut) >= 1;
+    const next = {
+      ...search,
+      destination,
+      checkIn: hasValidStay ? search.checkIn : '',
+      checkOut: hasValidStay ? search.checkOut : '',
+    };
+    setSearch(next);
+    runSearch(next);
   }
   // criteria permite reservar con fechas recién elegidas (p. ej. desde Blu),
   // antes de que el estado search se actualice.
@@ -909,7 +941,8 @@ export default function RestBluApp() {
     );
   }
   return (
-    <main className="min-h-screen bg-[#f5f8f7] text-[#102d3f]">
+    <MotionConfig reducedMotion="user">
+    <main className="restblu-site min-h-screen">
       <Header screen={screen} go={go} account={account} />
       {lastPaymentAttempt && (
         <aside role="status" className="mx-auto mt-4 flex max-w-7xl flex-wrap items-center gap-3 rounded-xl border border-[#b9d9d7] bg-[#effaf7] px-4 py-3 text-sm">
@@ -919,6 +952,8 @@ export default function RestBluApp() {
           <button type="button" onClick={() => { localStorage.removeItem(paymentAttemptStorageKey); setLastPaymentAttempt(null); setLastPaymentResult(''); }} className="font-bold text-[#54727b]">Ocultar</button>
         </aside>
       )}
+      <AnimatePresence initial={false} mode="wait">
+      <motion.div key={selected ? `property-${selected.id}` : screen} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.16 }}>
       {selected ? (
         <PropertyDetail
           property={selected}
@@ -941,6 +976,10 @@ export default function RestBluApp() {
           setSearch={setSearch}
           onSearch={runSearch}
         />
+      ) : screen === 'destinos' ? (
+        <Destinations properties={properties} onChoose={exploreDestination} />
+      ) : screen === 'soporte' ? (
+        <SupportCenter onChat={() => setAssistantOpen(true)} onAccount={() => go('cuenta')} onLookup={() => go('consulta')} />
       ) : screen === 'catalogo' ? (
         <Catalog
           filter={filter}
@@ -957,9 +996,9 @@ export default function RestBluApp() {
           onReset={clearSearch}
         />
       ) : screen === 'experiencias' ? (
-        <Experiences go={go} />
+        <Experiences onExplore={exploreDestination} />
       ) : screen === 'propietarios' ? (
-        <Owners />
+        <OwnerPortal account={account} onGuestAccount={() => go('cuenta')} />
       ) : screen === 'cuenta' ? (
         <AccountScreen
           account={account}
@@ -979,6 +1018,8 @@ export default function RestBluApp() {
       ) : (
         <ReservationLookup />
       )}
+      </motion.div>
+      </AnimatePresence>
       <Footer go={go} />
       {bookingProperty && (
         <BookingDialog
@@ -1019,6 +1060,8 @@ export default function RestBluApp() {
         />
       )}
       <PublicAiAssistant
+        open={assistantOpen}
+        onOpenChange={setAssistantOpen}
         properties={properties}
         search={search}
         selectedProperty={selected}
@@ -1034,6 +1077,7 @@ export default function RestBluApp() {
         </output>
       )}
     </main>
+    </MotionConfig>
   );
 }
 
@@ -1097,81 +1141,54 @@ function ReservationVerificationDialog({
   );
 }
 
-function Header({
-  screen,
-  go,
-  account,
-}: {
+function Header({ screen, go, account }: {
   screen: Screen;
   go: (screen: Screen) => void;
   account: CustomerAccount | null;
 }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const publicNav: { label: string; screen: Screen }[] = [
     { label: 'Inicio', screen: 'inicio' },
     { label: 'Alojamientos', screen: 'catalogo' },
+    { label: 'Destinos', screen: 'destinos' },
     { label: 'Experiencias', screen: 'experiencias' },
     { label: 'Para propietarios', screen: 'propietarios' },
+    { label: 'Ayuda', screen: 'soporte' },
   ];
+  function navigate(next: Screen) {
+    setMenuOpen(false);
+    go(next);
+  }
   return (
-    <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0b2435]/95 text-white backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-5 py-3.5 lg:px-8">
-        <button
-          onClick={() => go('inicio')}
-          className="flex items-center gap-2.5 text-left"
-        >
-          <div className="grid size-10 place-items-center rounded-[50%_50%_12px_50%] bg-[#53d9c6] text-xs font-black tracking-[-.08em] text-[#092b3a] shadow-[inset_-6px_-6px_0_#0b8982]">
-            RB
-          </div>
-          <div>
-            <p className="text-lg font-bold tracking-tight text-white">
-              Rest<span className="text-[#55dfca]">Blu</span>
-            </p>
-            <p className="-mt-1 text-[10px] font-semibold tracking-[.18em] text-[#96b2bc]">
-              ESTADÍAS INTELIGENTES
-            </p>
-          </div>
+    <header className="sticky top-0 z-30 border-b border-[#dce8ef] bg-[#f7fafc]/95 backdrop-blur-md">
+      <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-3 px-5 lg:px-8">
+        <button type="button" onClick={() => navigate('inicio')} aria-label="RestBlu, ir al inicio" className="flex min-h-11 shrink-0 items-center gap-2.5 text-left">
+          <span aria-hidden="true" className="grid size-10 place-items-center rounded-[50%_50%_12px_50%] bg-[#103d50] text-xs font-bold tracking-[-.06em] text-[#c2edf1]">RB</span>
+          <span><span className="block text-xl font-semibold tracking-[-.04em] text-[#102d3f]">Rest<span className="text-[#0b8996]">Blu</span></span><span className="block text-[8px] font-medium tracking-[.2em] text-[#5c7c8d]">ESTADÍAS A TU RITMO</span></span>
         </button>
-        <nav className="hidden items-center gap-5 lg:flex">
+        <nav aria-label="Navegación principal" className="hidden items-center gap-1 xl:flex">
           {publicNav.map((item) => (
-            <button
-              key={item.screen}
-              onClick={() => go(item.screen)}
-              className={`rounded-full px-3 py-1.5 text-sm font-semibold transition ${screen === item.screen ? 'bg-white/10 text-[#dff568]' : 'text-[#bfd0d5] hover:text-white'}`}
-            >
+            <button type="button" key={item.screen} onClick={() => navigate(item.screen)} aria-current={screen === item.screen ? 'page' : undefined} className={`min-h-11 rounded-full px-4 text-[13px] font-medium transition-colors ${screen === item.screen ? 'bg-[#e6f2f8] text-[#144e67]' : 'text-[#5b7787] hover:bg-[#eaf4fa] hover:text-[#17465e]'}`}>
               {item.label}
             </button>
           ))}
         </nav>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => go('cuenta')}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-bold ${screen === 'cuenta' ? 'bg-[#53d9c6] text-[#092b3a]' : 'text-[#b7ccd2]'}`}
-          >
-            <UserRound className="size-4" />
-            {account ? 'Mi cuenta' : 'Ingresar'}
-          </button>
-          <button
-            onClick={() => go('catalogo')}
-            className="rounded-full bg-[#dff568] px-4 py-2 text-sm font-bold text-[#102d3f] hover:bg-[#ebff87]"
-          >
-            Reservar
-          </button>
+        <div className="flex items-center gap-1.5 sm:gap-3">
+          <button type="button" onClick={() => navigate('cuenta')} className={`flex min-h-11 items-center gap-2 rounded-full px-3 text-xs font-medium sm:text-sm ${screen === 'cuenta' ? 'bg-[#e6f2f8] text-[#144e67]' : 'text-[#436679]'}`}><UserRound aria-hidden="true" className="size-4" /><span className="hidden sm:inline">{account ? 'Mi cuenta' : 'Ingresar'}</span><span className="sr-only sm:hidden">{account ? 'Mi cuenta' : 'Ingresar'}</span></button>
+          <button type="button" onClick={() => navigate('catalogo')} className="hidden min-h-11 items-center gap-2 rounded-full bg-[#103d50] px-5 text-xs font-semibold text-white transition-colors hover:bg-[#102d3f] sm:inline-flex">Reservar <ArrowRight aria-hidden="true" size={14} /></button>
+          <button type="button" aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'} aria-expanded={menuOpen} aria-controls="restblu-mobile-nav" onClick={() => setMenuOpen(!menuOpen)} className="grid size-11 place-items-center rounded-full border border-[#d6e5ee] text-[#103d50] xl:hidden">{menuOpen ? <X aria-hidden="true" size={20} /> : <Menu aria-hidden="true" size={20} />}</button>
         </div>
       </div>
+      <AnimatePresence initial={false}>
+        {menuOpen && <motion.nav id="restblu-mobile-nav" aria-label="Navegación móvil" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.15 }} className="grid gap-1 border-t border-[#dce8ef] bg-[#f7fafc] px-5 py-3 xl:hidden">
+          {publicNav.map((item) => <button type="button" key={item.screen} aria-current={screen === item.screen ? 'page' : undefined} onClick={() => navigate(item.screen)} className={`min-h-11 rounded-xl px-4 text-left text-sm ${screen === item.screen ? 'bg-[#e6f2f8] font-semibold text-[#144e67]' : 'text-[#436679]'}`}>{item.label}</button>)}
+        </motion.nav>}
+      </AnimatePresence>
     </header>
   );
 }
 
-function Landing({
-  go,
-  properties,
-  onSelect,
-  saved,
-  onSave,
-  search,
-  setSearch,
-  onSearch,
-}: {
+function Landing({ go, properties, onSelect, saved, onSave, search, setSearch, onSearch }: {
   go: (screen: Screen) => void;
   properties: Property[];
   onSelect: (property: Property) => void;
@@ -1182,121 +1199,14 @@ function Landing({
   onSearch: () => void;
 }) {
   return (
-    <>
-      <section className="overflow-hidden border-b border-[#c9ddda] bg-[#edf7f4]">
-        <div className="mx-auto grid max-w-7xl gap-12 px-5 py-12 lg:grid-cols-[1.02fr_.98fr] lg:px-8 lg:py-16">
-          <div className="flex flex-col justify-center">
-            <p className="mb-5 inline-flex w-fit items-center gap-2 rounded-full bg-[#dff568] px-3 py-1.5 text-xs font-black tracking-[.08em] text-[#173844]">
-              <Sparkles size={14} /> UNA ESTADÍA, CERO FRICCIÓN
-            </p>
-            <h1 className="max-w-2xl text-4xl font-bold leading-[1.02] tracking-[-.045em] text-[#102d3f] sm:text-6xl">
-              Tu llegada empieza mucho antes de{' '}
-              <span className="text-[#078a83]">la puerta.</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-[#56747c]">
-              Elige un lugar, confirma tu estadía y recibe un pase digital listo
-              para usar. Todo en un solo recorrido.
-            </p>
-            <SearchBox
-              properties={properties}
-              search={search}
-              setSearch={setSearch}
-              onSearch={onSearch}
-            />
-          </div>
-          <div className="relative min-h-[420px] lg:min-h-[590px]">
-            <img
-              src="https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=1200&q=88"
-              alt="Interior luminoso de una estadía RestBlu"
-              className="absolute inset-0 size-full rounded-[90px_18px_90px_18px] object-cover shadow-2xl"
-            />
-            <div className="absolute right-5 top-5 rounded-[20px_6px_20px_6px] bg-[#0b2435] px-5 py-4 text-white shadow-xl">
-              <p className="text-[10px] font-bold tracking-[.18em] text-[#a8c5ca]">
-                PASE DIGITAL
-              </p>
-              <p className="mt-1 font-mono text-sm font-bold text-[#dff568]">
-                LISTO AL RESERVAR
-              </p>
-            </div>
-            <div className="absolute -bottom-5 left-5 right-10 grid grid-cols-3 divide-x divide-white/15 rounded-[22px_8px_22px_8px] bg-[#0b7974] p-5 text-white shadow-2xl sm:left-[-28px]">
-              <div className="px-3"><strong className="block text-2xl">01</strong><span className="text-xs text-[#c9ebe5]">Elige</span></div>
-              <div className="px-3"><strong className="block text-2xl">02</strong><span className="text-xs text-[#c9ebe5]">Reserva</span></div>
-              <div className="px-3"><strong className="block text-2xl">03</strong><span className="text-xs text-[#c9ebe5]">Accede</span></div>
-            </div>
-          </div>
-        </div>
-      </section>
-      <section className="mx-auto max-w-7xl px-5 py-12 lg:px-8">
-        <div className="grid border-y border-[#cadbd7] py-3 sm:grid-cols-3 sm:divide-x sm:divide-[#cadbd7]">
-          <Value
-            icon={<ShieldCheck />}
-            title="Propiedades verificadas"
-            text="Calidad y seguridad antes de tu llegada."
-          />
-          <Value
-            icon={<KeyRound />}
-            title="Acceso sin esperas"
-            text="QR, código temporal o videoportero."
-          />
-          <Value
-            icon={<MessageSquareMore />}
-            title="Ayuda cuando la necesitas"
-            text="Soporte humano e IA durante la estadía."
-          />
-        </div>
-        <div className="mt-14 flex items-end justify-between gap-5">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[.16em] text-[#07888d]">
-              ESTADÍAS DESTACADAS
-            </p>
-            <h2 className="mt-2 text-3xl font-bold tracking-tight">
-              Encuentra tu próximo refugio
-            </h2>
-          </div>
-          <button
-            onClick={() => go('catalogo')}
-            className="hidden items-center gap-1 text-sm font-bold text-[#08757b] sm:flex"
-          >
-            Ver catálogo <ArrowRight size={16} />
-          </button>
-        </div>
-        <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {properties.slice(0, 3).map((property) => (
-            <PropertyCard
-              key={property.id}
-              property={property}
-              saved={saved.includes(property.id)}
-              onSave={() => onSave(property.id)}
-              onSelect={() => onSelect(property)}
-            />
-          ))}
-        </div>
-      </section>
-      <section className="mx-auto max-w-7xl px-5 pb-14 lg:px-8">
-        <div className="grid overflow-hidden rounded-3xl bg-[#e5f4f1] lg:grid-cols-2">
-          <div className="p-8 lg:p-11">
-            <p className="text-xs font-bold uppercase tracking-[.16em] text-[#07888d]">
-              EXPERIENCIA RESTBLU
-            </p>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight">
-              Tu reserva te abre la puerta.
-            </h2>
-            <p className="mt-4 max-w-lg leading-6 text-[#55727a]">
-              Validamos tu reserva, enviamos instrucciones claras y habilitamos
-              tus accesos solo durante la estadía. Sin llaves físicas ni
-              esperas.
-            </p>
-            <button
-              onClick={() => go('consulta')}
-              className="mt-6 rounded-xl bg-[#103d50] px-4 py-2.5 text-sm font-bold text-white"
-            >
-              Consultar mi reserva
-            </button>
-          </div>
-          <div className="min-h-64 bg-[url('https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1100&q=85')] bg-cover bg-center" />
-        </div>
-      </section>
-    </>
+    <StayLanding
+      onExplore={() => go('catalogo')}
+      onLookup={() => go('consulta')}
+      searchBox={<SearchBox properties={properties} search={search} setSearch={setSearch} onSearch={onSearch} />}
+      featured={properties.slice(0, 3).map((property) => (
+        <PropertyCard key={property.id} property={property} saved={saved.includes(property.id)} onSave={() => onSave(property.id)} onSelect={() => onSelect(property)} />
+      ))}
+    />
   );
 }
 
@@ -1320,7 +1230,7 @@ function SearchBox({
         event.preventDefault();
         onSearch();
       }}
-      className={`relative z-10 grid gap-2 rounded-2xl bg-white p-3 ${compact ? 'mt-7 border border-[#d7e7e5] shadow-sm md:grid-cols-[1.35fr_1fr_1fr_.8fr_auto]' : 'mt-8 max-w-xl border border-[#cfe0dc] shadow-[0_20px_45px_rgba(16,45,63,.12)] sm:grid-cols-2 [&>label:first-of-type]:sm:col-span-2 [&>button]:sm:col-span-2'}`}
+      className={`relative z-10 grid gap-2 rounded-2xl border border-[#d7e7ef] bg-white p-3 ${compact ? 'mt-7 shadow-sm md:grid-cols-[1.35fr_1fr_1fr_.8fr_auto]' : 'shadow-[0_12px_36px_-18px_rgba(31,65,45,.25)] sm:grid-cols-2 lg:grid-cols-[1.35fr_1fr_1fr_.8fr_auto] [&>button]:sm:col-span-2 [&>button]:lg:col-span-1'}`}
     >
       <SearchField
         id={compact ? 'catalog-destination' : 'home-destination'}
@@ -1425,9 +1335,9 @@ function SearchField({
       htmlFor={id}
       className="flex min-w-0 items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-[#f2f8f7] focus-within:bg-[#f2f8f7] focus-within:ring-2 focus-within:ring-[#71d8cf]"
     >
-      <span className="shrink-0 text-[#0b8e92]">{icon}</span>
+      <span aria-hidden="true" className="shrink-0 text-[#0b788b]">{icon}</span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[10px] font-bold uppercase tracking-wider text-[#77929a]">
+        <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wider text-[#56788a]">
           {label}
         </span>
         {children}
@@ -1465,12 +1375,12 @@ function Catalog({
 }) {
   const filters = ['Todos', 'Mar', 'Piscina', 'Naturaleza', 'Mascotas'];
   return (
-    <section className="mx-auto max-w-7xl px-5 py-11 lg:px-8">
+    <section className="mx-auto max-w-7xl px-5 py-11 lg:px-8 lg:py-16">
       <div className="max-w-2xl">
         <p className="text-xs font-bold uppercase tracking-[.16em] text-[#07888d]">
           ALOJAMIENTOS
         </p>
-        <h1 className="mt-2 text-4xl font-bold tracking-tight">
+        <h1 className="restblu-display mt-3 text-4xl leading-[1.12] tracking-[-.035em] sm:text-5xl">
           Una estadía para cada forma de escapar.
         </h1>
         <p className="mt-3 leading-6 text-[#648088]">
@@ -1490,8 +1400,9 @@ function Catalog({
           {filters.map((item) => (
             <button
               key={item}
+              aria-pressed={filter === item}
               onClick={() => setFilter(item)}
-              className={`rounded-full px-4 py-2 text-sm font-bold ${filter === item ? 'bg-[#0b6871] text-white' : 'bg-white text-[#56727a] ring-1 ring-[#d4e5e2] hover:bg-[#e9f5f3]'}`}
+              className={`min-h-11 rounded-full px-5 py-2 text-sm font-medium transition-colors ${filter === item ? 'bg-[#0b6871] text-white' : 'bg-white text-[#56727a] ring-1 ring-[#d4e5e2] hover:bg-[#e9f5f3]'}`}
             >
               {item}
             </button>
@@ -1552,78 +1463,40 @@ function Catalog({
   );
 }
 
-function PropertyCard({
-  property,
-  saved,
-  onSave,
-  onSelect,
-}: {
+function PropertyCard({ property, saved, onSave, onSelect }: {
   property: Property;
   saved: boolean;
   onSave: () => void;
   onSelect: () => void;
 }) {
   return (
-    <article className="group overflow-hidden rounded-2xl border border-[#dce9e7] bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="relative h-52 overflow-hidden">
-        <img
-          src={property.image}
-          alt={property.name}
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-        />
-        <button
-          aria-label="Guardar alojamiento"
-          onClick={onSave}
-          className={`absolute right-3 top-3 grid size-9 place-items-center rounded-full ${saved ? 'bg-[#0b6871] text-white' : 'bg-white/90 text-[#34535d]'}`}
-        >
-          <Heart size={17} fill={saved ? 'currentColor' : 'none'} />
+    <motion.article initial={false} whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className="restblu-property-card group overflow-hidden rounded-[20px] border border-[#dce8ef] bg-white shadow-[0_4px_16px_-12px_rgba(25,63,53,.18)]">
+      <div className="relative overflow-hidden bg-[#eaf2f7]">
+        <button type="button" onClick={onSelect} aria-label={`Ver alojamiento ${property.name}`} className="block h-60 w-full overflow-hidden text-left">
+          <img src={property.image} alt={property.name} loading="lazy" width={800} height={550} className="restblu-property-image h-full w-full object-cover" />
         </button>
-        <span className="absolute bottom-3 left-3 rounded-full bg-white/95 px-2.5 py-1 text-xs font-bold text-[#173f4b]">
-          {property.type}
-        </span>
+        <motion.button type="button" whileTap={{ scale: 0.9 }} aria-label={saved ? `Quitar ${property.name} de favoritos` : `Guardar ${property.name} en favoritos`} aria-pressed={saved} onClick={onSave} className={`absolute right-3 top-3 grid size-11 place-items-center rounded-full shadow-sm backdrop-blur-sm transition-colors ${saved ? 'bg-[#103d50] text-white' : 'bg-white/95 text-[#2f6279] hover:bg-white'}`}>
+          <Heart aria-hidden="true" size={18} fill={saved ? 'currentColor' : 'none'} />
+        </motion.button>
+        <span className="pointer-events-none absolute bottom-4 left-4 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-medium text-[#1d4d64]">{property.type}</span>
       </div>
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <h3 className="text-lg font-bold">{property.name}</h3>
-            <p className="mt-1 flex items-center gap-1 text-sm text-[#6b868e]">
-              <MapPin size={14} />
-              {property.place}
-            </p>
-          </div>
-          <span className="flex items-center gap-1 text-sm font-bold">
-            <Star size={14} fill="#f2b84b" className="text-[#f2b84b]" />
-            {property.rating}
-          </span>
+      <div className="p-5">
+        <div className="flex items-center justify-between gap-3 text-xs">
+          <p className="flex items-center gap-1.5 text-[#58788b]"><MapPin aria-hidden="true" size={13} />{property.place}</p>
+          <span className="flex shrink-0 items-center gap-1 font-semibold text-[#245570]"><Star aria-hidden="true" size={13} fill="#b68e42" className="text-[#b68e42]" /><span className="sr-only">Valoración </span>{property.rating}</span>
         </div>
-        <div className="mt-4 flex gap-3 text-xs font-semibold text-[#658089]">
-          <span className="flex items-center gap-1">
-            <Users size={14} />
-            {property.guests}
-          </span>
-          <span className="flex items-center gap-1">
-            <BedDouble size={14} />
-            {property.beds}
-          </span>
-          <span className="flex items-center gap-1">
-            <Bath size={14} />
-            {property.baths}
-          </span>
+        <h3 className="mt-2 text-lg font-semibold tracking-[-.02em] text-[#153d56]"><button type="button" onClick={onSelect} className="min-h-9 text-left hover:text-[#087b8c]">{property.name}</button></h3>
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[11px] text-[#5a788b]">
+          <span className="flex items-center gap-1.5"><Users aria-hidden="true" size={14} />{property.guests} huéspedes</span>
+          <span className="flex items-center gap-1.5"><BedDouble aria-hidden="true" size={14} />{property.beds} camas</span>
+          <span className="flex items-center gap-1.5"><Bath aria-hidden="true" size={14} />{property.baths} baños</span>
         </div>
-        <div className="mt-5 flex items-center justify-between border-t border-[#e8f0ef] pt-4">
-          <p className="font-bold">
-            {property.price}
-            <span className="text-xs font-medium text-[#779199]"> / noche</span>
-          </p>
-          <button
-            onClick={onSelect}
-            className="text-sm font-bold text-[#08757b]"
-          >
-            Ver detalle
-          </button>
+        <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#e4edf3] pt-4">
+          <p className="text-lg font-semibold tracking-[-.03em] text-[#17465e]">{property.price}<span className="text-xs font-normal tracking-normal text-[#5a788b]"> / noche</span></p>
+          <button type="button" onClick={onSelect} className="inline-flex min-h-11 items-center gap-2 text-xs font-semibold text-[#0b6871]">Ver detalle <ArrowRight aria-hidden="true" size={15} /></button>
         </div>
       </div>
-    </article>
+    </motion.article>
   );
 }
 
@@ -1943,7 +1816,7 @@ function PropertyDetail({
   );
 }
 
-function Experiences({ go }: { go: (screen: Screen) => void }) {
+function Experiences({ onExplore }: { onExplore: (place: string) => void }) {
   const items = [
     [
       'Navegación al atardecer',
@@ -1985,7 +1858,7 @@ function Experiences({ go }: { go: (screen: Screen) => void }) {
               <p className="text-sm font-bold text-[#07888d]">{place}</p>
               <h2 className="mt-1 text-xl font-bold">{name}</h2>
               <button
-                onClick={() => go('catalogo')}
+                onClick={() => onExplore(place)}
                 className="mt-4 text-sm font-bold text-[#0b6871]"
               >
                 Buscar alojamiento cercano{' '}
@@ -1996,68 +1869,6 @@ function Experiences({ go }: { go: (screen: Screen) => void }) {
         ))}
       </div>
     </section>
-  );
-}
-
-function Owners() {
-  return (
-    <section className="mx-auto max-w-7xl px-5 py-11 lg:px-8">
-      <div className="grid overflow-hidden rounded-3xl bg-[#103d50] text-white lg:grid-cols-[1.1fr_.9fr]">
-        <div className="p-8 lg:p-12">
-          <p className="text-xs font-bold uppercase tracking-[.16em] text-[#7fe3d8]">
-            PARA PROPIETARIOS
-          </p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight">
-            Más reservas. Menos operación manual.
-          </h1>
-          <p className="mt-5 max-w-xl leading-7 text-[#c1d9dc]">
-            Centraliza tus calendarios, tarifas, huéspedes y accesos. RestBlu
-            mantiene cada estadía bajo control desde una sola plataforma.
-          </p>
-          <p className="mt-7 rounded-xl border border-white/20 bg-white/10 px-4 py-3 text-sm text-[#c1d9dc]">
-            El control operativo está disponible únicamente en el gestor local de RestBlu.
-          </p>
-        </div>
-        <div className="grid content-center gap-4 bg-[#0b4b5d] p-8">
-          <OwnerPoint
-            icon={<CalendarDays />}
-            title="Calendario sincronizado"
-            text="Evita conflictos con reservas directas y canales OTA."
-          />
-          <OwnerPoint
-            icon={<KeyRound />}
-            title="Accesos automáticos"
-            text="QR, portón y departamento activos solo cuando corresponde."
-          />
-          <OwnerPoint
-            icon={<Bot />}
-            title="IA que apoya decisiones"
-            text="Alertas, precios sugeridos y respuestas operativas."
-          />
-        </div>
-      </div>
-    </section>
-  );
-}
-function OwnerPoint({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="flex gap-3 rounded-2xl bg-white/10 p-4">
-      <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#55d8cb] text-[#073b45]">
-        {icon}
-      </div>
-      <div>
-        <p className="font-bold">{title}</p>
-        <p className="mt-1 text-sm leading-5 text-[#c2d9dc]">{text}</p>
-      </div>
-    </div>
   );
 }
 
@@ -2338,7 +2149,7 @@ function PaymentDialog({
   // que verifica el pago con Transbank y habilita el QR.
   async function pay() {
     if (paymentVerifying || localStorage.getItem(WEBPAY_VERIFICATION_KEY) === reservation.id) {
-      setError('Webpay ya aprobó un pago para esta reserva. Espera la confirmación en Mi cuenta; no vuelvas a pagar.');
+      setError('Hay un pago en verificación para esta reserva. Consulta su estado en Mi cuenta; no vuelvas a pagar.');
       return;
     }
     setError('');
@@ -2398,7 +2209,7 @@ function PaymentDialog({
             <button type="button" onClick={onClose} className="rounded-xl border border-[#ccdfdc] px-5 py-3 text-sm font-bold text-[#496b74]">Cerrar</button>
             {status?.emailVerified && status.status !== 'expirada' && !paymentVerifying && <button type="button" disabled={paying} onClick={() => void pay()} className="rounded-xl bg-[#0b6871] px-5 py-3 text-sm font-bold text-white disabled:opacity-60">{paying ? 'Abriendo Webpay…' : `Pagar ${formatCurrency(status?.booking?.total ?? reservation.total)} con Webpay`}</button>}
           </div>
-          {paymentVerifying && <p className="text-center text-sm font-semibold text-[#0b6871]">Pago aprobado en Webpay. Sigue la confirmación en Mi cuenta; no realices otro pago.</p>}
+          {paymentVerifying && <p className="text-center text-sm font-semibold text-[#0b6871]">Pago en verificación. Sigue su estado en Mi cuenta; no realices otro pago.</p>}
           <p className="text-center text-xs text-[#718b93]">Tu QR de acceso y el comprobante se habilitan apenas se aprueba el pago.</p>
         </div>
       </section>
@@ -3015,27 +2826,6 @@ function ReceiptRow({
   );
 }
 
-function Value({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="flex gap-3 rounded-xl p-3">
-      <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-[#e4f5f2] text-[#087a80]">
-        {icon}
-      </div>
-      <div>
-        <p className="text-sm font-bold">{title}</p>
-        <p className="mt-0.5 text-xs leading-5 text-[#6f8991]">{text}</p>
-      </div>
-    </div>
-  );
-}
 function Info({
   icon,
   label,
@@ -3071,6 +2861,7 @@ function Footer({ go }: { go: (screen: Screen) => void }) {
           title="Explorar"
           items={[
             ['Alojamientos', 'catalogo'],
+            ['Destinos', 'destinos'],
             ['Experiencias', 'experiencias'],
             ['Mis reservas', 'consulta'],
           ]}
@@ -3080,16 +2871,17 @@ function Footer({ go }: { go: (screen: Screen) => void }) {
           title="Propietarios"
           items={[
             ['Cómo funciona', 'propietarios'],
-            ['Gestionar propiedad', 'propietarios'],
-            ['Centro de ayuda', 'inicio'],
+            ['Administración local', 'propietarios'],
+            ['Centro de ayuda', 'soporte'],
           ]}
           go={go}
         />
         <div>
           <p className="text-sm font-bold">Soporte RestBlu</p>
           <p className="mt-3 text-sm leading-6 text-[#a9c4c9]">
-            Atención todos los días, antes, durante y después de tu estadía.
+            Encuentra respuestas en Ayuda o conversa con Blu sobre el catálogo y tu reserva.
           </p>
+          <button type="button" onClick={() => go('soporte')} className="mt-3 min-h-11 text-sm font-semibold text-[#a9d9e9] hover:text-white">Ir al centro de ayuda <ArrowRight aria-hidden="true" className="ml-1 inline size-4" /></button>
         </div>
       </div>
       <div className="border-t border-white/10 py-4 text-center text-xs text-[#8eabb1]">

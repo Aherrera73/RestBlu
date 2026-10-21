@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #f5f8f7;
+  --background: #f7fafc;
   --foreground: #102d3f;
   --card: #fff;
   --card-foreground: #102d3f;
@@ -32,10 +32,63 @@ body {
   margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), 'Segoe UI', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 button {
   cursor: pointer;
+}
+
+.restblu-site {
+  background: var(--background);
+  color: var(--foreground);
+}
+.restblu-display {
+  font-family: var(--font-geist-sans), 'Segoe UI', Arial, sans-serif;
+  font-weight: 650;
+  text-wrap: balance;
+}
+.restblu-display em { font-style: normal; }
+.restblu-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  line-height: 1.7;
+  color: #4d7184;
+}
+.restblu-hero {
+  background: #edf5fa;
+}
+.restblu-text-link { color: #0b6871; }
+.restblu-outline-button {
+  min-height: 44px;
+  border: 1px solid #c7dde8;
+  border-radius: 999px;
+  padding: 0.7rem 1.15rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #17465e;
+  transition: background-color 180ms, border-color 180ms;
+}
+.restblu-outline-button:hover { background: #e6f1f7; border-color: #89b7cc; }
+.restblu-site :is(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid #087b8c;
+  outline-offset: 4px;
+}
+.restblu-property-image { transition: transform 350ms ease; }
+.restblu-property-card:hover .restblu-property-image { transform: scale(1.035); }
+
+@media (prefers-reduced-motion: reduce) {
+  .restblu-site *, .restblu-site *::before, .restblu-site *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .restblu-property-card:hover .restblu-property-image { transform: none; }
 }
 
 @media print {

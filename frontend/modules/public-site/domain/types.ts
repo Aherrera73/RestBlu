@@ -1,6 +1,8 @@
 export type Screen =
   | 'inicio'
   | 'catalogo'
+  | 'destinos'
+  | 'soporte'
   | 'experiencias'
   | 'propietarios'
   | 'consulta'

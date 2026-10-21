@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import sql from 'mssql';
 import { createLocalDatabase } from './local-database.mjs';
+import { ownerFromRow, OwnerError } from '../owners/owner-service.mjs';
 import {
   CUSTOMER_COLUMNS, PROPERTY_COLUMNS, RESERVATION_COLUMNS, SCHEMA_VERSION,
   accessEventFromRow, customerFromRow, customerValues, integer, now, planCollection,
@@ -261,6 +262,8 @@ export async function createSqlServerDatabase({ config, schemaPath, importFrom =
 
       const data = source.readDatabase();
       await saveDatabase({ meta: data.meta, properties: data.properties, customers: data.customers, reservations: data.reservations });
+      await exec(pool, 'DELETE FROM dbo.propietario_alojamientos; DELETE FROM dbo.propietarios;');
+      for (const owner of source.listOwners()) await saveOwner(owner);
       await exec(pool, 'DELETE FROM dbo.correo_sesiones_verificadas; DELETE FROM dbo.accesos_eventos;');
       for (const row of sessions) {
         await exec(pool, 'INSERT INTO dbo.correo_sesiones_verificadas (owner_uid, correo, rut, verificado_at) VALUES (@p0, @p1, @p2, @p3)',
@@ -287,12 +290,50 @@ export async function createSqlServerDatabase({ config, schemaPath, importFrom =
     }
   }
 
+  async function listOwners() {
+    const { recordsets: [rows, assignments] } = await exec(pool, `
+      SELECT * FROM dbo.propietarios ORDER BY nombre, id;
+      SELECT propietario_id, alojamiento_id FROM dbo.propietario_alojamientos ORDER BY alojamiento_id;
+    `);
+    return rows.map((row) => ownerFromRow(row,
+      assignments.filter((item) => item.propietario_id === row.id).map((item) => item.alojamiento_id)));
+  }
+
+  async function saveOwner(owner) {
+    const transaction = new sql.Transaction(pool);
+    await transaction.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);
+    try {
+      await exec(transaction, `
+        MERGE dbo.propietarios WITH (HOLDLOCK) AS destino
+        USING (SELECT @p0 AS id) AS origen ON destino.id = origen.id
+        WHEN MATCHED THEN UPDATE SET nombre = @p2, telefono = @p4, activo = @p5, actualizado_at = @p7
+        WHEN NOT MATCHED THEN INSERT (id, firebase_uid, nombre, correo, telefono, activo, creado_at, actualizado_at)
+          VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6, @p7);
+      `, [owner.id, owner.uid, owner.name, owner.email, owner.phone, owner.active, owner.createdAt, owner.updatedAt]);
+      await exec(transaction, 'DELETE FROM dbo.propietario_alojamientos WHERE propietario_id = @p0', [owner.id]);
+      for (const propertyId of owner.propertyIds) {
+        await exec(transaction, 'INSERT INTO dbo.propietario_alojamientos (alojamiento_id, propietario_id) VALUES (@p0, @p1)', [propertyId, owner.id]);
+      }
+      await setMetadata('updated_at', now(), transaction);
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback().catch(() => {});
+      if (DUPLICATE_KEY_ERRORS.has(error?.number)) {
+        throw new OwnerError('El correo, la cuenta o una propiedad ya se asignaron a otro propietario. Actualiza la lista.', 409);
+      }
+      throw error;
+    }
+    return (await listOwners()).find((item) => item.id === owner.id);
+  }
+
   if (await metadata('legacy_import_complete') !== '1') {
     if (importFrom?.sqlitePath && existsSync(importFrom.sqlitePath)) {
       const counts = await importFromSqlite(importFrom);
       console.log(`[SQL Server] Datos copiados desde SQLite: ${JSON.stringify(counts)}`);
     } else if (importFrom?.legacyJsonPath && existsSync(importFrom.legacyJsonPath)) {
-      await saveDatabase(JSON.parse(readFileSync(importFrom.legacyJsonPath, 'utf8')));
+      const legacy = JSON.parse(readFileSync(importFrom.legacyJsonPath, 'utf8'));
+      await saveDatabase(legacy);
+      for (const owner of legacy.owners || []) await saveOwner(owner);
     } else {
       await setMetadata('schema_version', SCHEMA_VERSION);
       await setMetadata('updated_at', now());
@@ -300,7 +341,13 @@ export async function createSqlServerDatabase({ config, schemaPath, importFrom =
     }
   }
 
+  if (integer(await metadata('schema_version'), 0) < Number(SCHEMA_VERSION)) {
+    await setMetadata('schema_version', SCHEMA_VERSION);
+  }
+
   return {
+    listOwners,
+    saveOwner,
     engine: 'SQL Server',
     storage: 'sqlserver',
     path: describeSqlServer(config),

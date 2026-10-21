@@ -39,8 +39,12 @@ import {
 import { customerFromInput } from '../customers/customer-service.mjs';
 import { reservationLookupEmailGroups } from '../reservations/public-lookup.mjs';
 import { propertyFromInput, publicProperty } from '../properties/property-service.mjs';
+import { OwnerError, ownerDashboard, ownerFirebaseUser, ownerFromInput, verifiedOwnerIdentity } from '../owners/owner-service.mjs';
+import { processOwnerDashboardRequests, removeExpiredOwnerDashboardRequests } from '../owners/cloud-owner-dashboard.mjs';
 import { createAiClient } from '../ai/ai-client.mjs';
+import { AiQuotaError, consumeAiQuota } from '../ai/ai-quota.mjs';
 import { phoneAccessWithinStay, verifyPhoneAccessSignature } from '../access/phone-access.mjs';
+import { loadManagerPassword, managerAuthorized, publicApiRequest } from './manager-auth.mjs';
 import {
   adminContext, dailySummary, guestContext, languageInstruction, publicContext, suggestionsFromAnswer,
 } from '../ai/assistant-context.mjs';
@@ -95,6 +99,8 @@ for (const configPath of PRIVATE_CONFIG_PATHS) {
   }
 }
 const PORT = Number(process.env.RESTBLU_ADMIN_PORT || process.env.LUMASTAY_ADMIN_PORT || 3100);
+const MANAGER_PASSWORD_PATH = join(LOCAL_CONFIG_ROOT, 'RestBlu', 'manager-password.txt');
+const MANAGER_PASSWORD = loadManagerPassword(MANAGER_PASSWORD_PATH, process.env.RESTBLU_MANAGER_PASSWORD || '');
 const PUBLIC_DIR = join(ROOT, 'public');
 const DATA_DIR = join(ROOT, 'data');
 const UPLOAD_DIR = join(ROOT, 'uploads');
@@ -474,6 +480,14 @@ function sendJson(request, response, status, data, headers = {}) {
     ...corsHeaders(request),
     ...headers,
   });
+}
+
+function requireManager(request, response) {
+  if (managerAuthorized(request, MANAGER_PASSWORD)) return true;
+  sendJson(request, response, 401, { error: 'Se requiere la clave del gestor local.' }, {
+    'WWW-Authenticate': 'Basic realm="RestBlu gestor", charset="UTF-8"',
+  });
+  return false;
 }
 
 function publicRequestErrorMessage(error) {
@@ -1745,6 +1759,8 @@ async function handleApi(request, response, url) {
     return true;
   }
 
+  if (!publicApiRequest(request.method, url.pathname, url) && !requireManager(request, response)) return true;
+
   if (!enforceRateLimit(request, response, url)) return true;
 
   if (request.method === 'POST' && url.pathname === '/api/uploads') {
@@ -1777,6 +1793,49 @@ async function handleApi(request, response, url) {
   const database = await readDatabase();
   const segments = url.pathname.split('/').filter(Boolean);
 
+  if (request.method === 'GET' && url.pathname === '/api/owner/dashboard') {
+    try {
+      const token = bearerToken(request);
+      if (!token) throw new OwnerError('Inicia sesión con tu cuenta de propietario.', 401);
+      const identity = await verifiedOwnerIdentity(await firebaseAuth(), token);
+      const result = ownerDashboard(database, await localDatabase.listOwners(), identity);
+      sendJson(request, response, 200, result, { 'Cache-Control': 'no-store' });
+    } catch (error) {
+      sendJson(request, response, error instanceof OwnerError ? error.status : 503, {
+        error: error instanceof OwnerError ? error.message : 'El panel de propietarios no está disponible en este momento. Inténtalo más tarde.',
+      }, { 'Cache-Control': 'no-store' });
+    }
+    return true;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/admin/owners') {
+    sendJson(request, response, 200, { owners: await localDatabase.listOwners() }, { 'Cache-Control': 'no-store' });
+    return true;
+  }
+
+  const ownerUpdate = request.method === 'PUT' && /^\/api\/admin\/owners\/([a-f0-9-]{36})$/.exec(url.pathname);
+  if ((request.method === 'POST' && url.pathname === '/api/admin/owners') || ownerUpdate) {
+    try {
+      const owners = await localDatabase.listOwners();
+      const existing = ownerUpdate ? owners.find((item) => item.id === ownerUpdate[1]) : null;
+      if (ownerUpdate && !existing) throw new OwnerError('Propietario no encontrado.', 404);
+      const owner = ownerFromInput(await readJsonBody(request), { existing, owners, properties: database.properties });
+      // Al desactivar se revoca el rol local sin alterar la cuenta de huésped
+      // de Firebase. La reactivación exige comprobar de nuevo su identidad.
+      if (!existing || owner.active) {
+        const user = await ownerFirebaseUser(await firebaseAuth(), owner);
+        owner.uid = user.uid;
+      }
+      const saved = await localDatabase.saveOwner(owner);
+      sendJson(request, response, existing ? 200 : 201, { owner: saved }, { 'Cache-Control': 'no-store' });
+    } catch (error) {
+      sendJson(request, response, error instanceof OwnerError ? error.status : 503, {
+        error: error instanceof OwnerError ? error.message : 'No se pudo vincular la cuenta del propietario. Revisa la conexión y la configuración de Firebase del gestor.',
+      });
+    }
+    return true;
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/public/reservations/lookup') {
     const input = await readJsonBody(request);
     try {
@@ -1795,6 +1854,10 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === 'GET' && url.pathname === '/api/health') {
+    if (!managerAuthorized(request, MANAGER_PASSWORD)) {
+      sendJson(request, response, 200, { ok: true });
+      return true;
+    }
     sendJson(request, response, 200, {
       ok: true,
       storage: localDatabase.storage,
@@ -2269,6 +2332,13 @@ async function handleApi(request, response, url) {
       return true;
     }
     const uid = accountDelete[1];
+    const linkedOwner = (await localDatabase.listOwners()).find((owner) => owner.uid === uid);
+    if (linkedOwner) {
+      sendJson(request, response, 409, {
+        error: 'Esta cuenta está vinculada al registro de propietarios. Para revocar su panel, deshabilita su acceso en Propietarios; su identidad vinculada debe conservarse.',
+      });
+      return true;
+    }
     const active = database.reservations.filter((reservation) => reservation.ownerUid === uid &&
       paidAndConfirmed(reservation) && reservationAccessEnd(reservation) > Date.now());
     if (active.length) {
@@ -2656,7 +2726,7 @@ async function handleApi(request, response, url) {
   }
 
   if (request.method === 'GET' && url.pathname === '/api/backup') {
-    send(response, 200, `${JSON.stringify(database, null, 2)}\n`, {
+    send(response, 200, `${JSON.stringify({ ...database, owners: await localDatabase.listOwners() }, null, 2)}\n`, {
       'Content-Type': MIME['.json'],
       'Content-Disposition': `attachment; filename="restblu-respaldo-${new Date().toISOString().slice(0, 10)}.json"`,
     });
@@ -3153,6 +3223,7 @@ async function processPendingAiRequests(store) {
           typeof input.question !== 'string' || input.question.length > 1_500) {
         throw new Error('La pregunta no es válida.');
       }
+      await consumeAiQuota(store, input.ownerUid);
       const result = await askPublicAi(database, text(input.question, 1_500), input.history, input.search, {
         ownerUid: input.ownerUid,
         onDelta: (partial) => {
@@ -3175,7 +3246,8 @@ async function processPendingAiRequests(store) {
       await pendingWrite;
       await document.ref.set({
         syncStatus: 'error',
-        error: 'El servidor de IA no respondió. Comprueba que esté encendido y vuelve a intentar.',
+        error: error instanceof AiQuotaError ? error.message :
+          'El servidor de IA no respondió. Comprueba que esté encendido y vuelve a intentar.',
         processedAt: new Date().toISOString(),
       }, { merge: true });
     } finally {
@@ -3883,6 +3955,10 @@ async function expireBiometricTemplates() {
 
 const server = createServer(async (request, response) => {
   try {
+    if (![`${HOST}:${PORT}`, `localhost:${PORT}`].includes(String(request.headers.host || '').toLowerCase())) {
+      send(response, 403, 'Host no permitido.', { 'Content-Type': 'text/plain; charset=utf-8' });
+      return;
+    }
     const url = new URL(request.url || '/', `http://${request.headers.host || `${HOST}:${PORT}`}`);
     if (url.pathname.startsWith('/api/')) {
       if (!(await handleApi(request, response, url))) {
@@ -3897,6 +3973,7 @@ const server = createServer(async (request, response) => {
       }
       return;
     }
+    if (!requireManager(request, response)) return;
     if (!(await serveFromDirectory(response, PUBLIC_DIR, url.pathname, 'index.html'))) {
       send(response, 404, 'No encontrado', { 'Content-Type': 'text/plain; charset=utf-8' });
     }
@@ -3909,6 +3986,7 @@ server.listen(PORT, HOST, () => {
   console.log(`Gestor local RestBlu: http://${HOST}:${PORT}`);
   console.log(`Base ${localDatabase.engine}: ${localDatabase.path}`);
   console.log(`Configuración privada: ${PRIVATE_CONFIG_PATH}`);
+  console.log(`Clave de acceso al gestor: ${process.env.RESTBLU_MANAGER_PASSWORD ? 'variable RESTBLU_MANAGER_PASSWORD' : MANAGER_PASSWORD_PATH}`);
   console.log(`Firebase: ${existsSync(FIREBASE_SERVICE_ACCOUNT_PATH) ? 'configurado' : 'pendiente'}`);
   console.log(
     `Correo: ${process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS ? 'configurado' : 'pendiente'}`,
@@ -3978,6 +4056,18 @@ const accountVerificationTimer = setInterval(() => {
   void runBackgroundJob('Verificación de cuentas', async () => processAccountVerificationRequests(await firebaseStore()));
 }, 4_000);
 accountVerificationTimer.unref();
+const ownerDashboardTimer = setInterval(() => {
+  if (!existsSync(FIREBASE_SERVICE_ACCOUNT_PATH)) return;
+  void runBackgroundJob('Panel de propietarios', async () => processOwnerDashboardRequests(await firebaseStore(), {
+    auth: await firebaseAuth(), readDatabase, listOwners: () => localDatabase.listOwners(),
+  }));
+}, 4_000);
+ownerDashboardTimer.unref();
+const ownerDashboardCleanupTimer = setInterval(() => {
+  if (!existsSync(FIREBASE_SERVICE_ACCOUNT_PATH)) return;
+  void runBackgroundJob('Limpieza de consultas de propietarios', async () => removeExpiredOwnerDashboardRequests(await firebaseStore()));
+}, 60_000);
+ownerDashboardCleanupTimer.unref();
 webpayPaymentsTimer.unref();
 const phoneAccessTimer = setInterval(() => {
   if (!existsSync(FIREBASE_SERVICE_ACCOUNT_PATH)) return;

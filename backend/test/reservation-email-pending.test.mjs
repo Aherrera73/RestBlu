@@ -101,6 +101,7 @@ test('reservar exige cuenta verificada; el gestor recalcula precio, valida datos
     env: {
       ...process.env,
       RESTBLU_ADMIN_PORT: String(port),
+      RESTBLU_MANAGER_PASSWORD: 'clave-de-prueba-gestor-0123456789abcdef',
       RESTBLU_DB_PATH: databasePath,
       // Las pruebas nunca deben usar la base SQL Server real del archivo privado.
       RESTBLU_DB_ENGINE: 'sqlite',
@@ -122,6 +123,7 @@ test('reservar exige cuenta verificada; el gestor recalcula precio, valida datos
     headers: {
       ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(!token ? { Authorization: `Basic ${Buffer.from('manager:clave-de-prueba-gestor-0123456789abcdef').toString('base64')}` } : {}),
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -146,6 +148,11 @@ test('reservar exige cuenta verificada; el gestor recalcula precio, valida datos
     assert.equal(healthResponse.headers.get('x-content-type-options'), 'nosniff');
     assert.equal(healthResponse.headers.get('referrer-policy'), 'no-referrer');
     assert.equal(healthResponse.headers.get('x-frame-options'), 'DENY');
+    assert.equal((await fetch(`http://127.0.0.1:${port}/api/backup`)).status, 401);
+    assert.equal((await fetch(`http://127.0.0.1:${port}/api/admin/properties`)).status, 401);
+    assert.equal((await fetch(`http://127.0.0.1:${port}/`)).status, 401);
+    assert.equal((await fetch(`http://127.0.0.1:${port}/api/properties`)).status, 200);
+    assert.equal((await api('/api/backup')).status, 200);
 
     const preflight = await fetch(`http://127.0.0.1:${port}/api/reservations`, {
       method: 'OPTIONS',
@@ -282,14 +289,20 @@ test('reservar exige cuenta verificada; el gestor recalcula precio, valida datos
     assert.deepEqual(theirs.reservations.map((item) => item.booking.id), ['RB-TEST-SECOND-CUSTOMER']);
 
     const fakeImage = await fetch(`http://127.0.0.1:${port}/api/uploads?name=falsa`, {
-      method: 'POST', headers: { 'Content-Type': 'image/png' }, body: 'esto no es una imagen',
+      method: 'POST', headers: {
+        'Content-Type': 'image/png',
+        Authorization: `Basic ${Buffer.from('manager:clave-de-prueba-gestor-0123456789abcdef').toString('base64')}`,
+      }, body: 'esto no es una imagen',
     });
     assert.equal(fakeImage.status, 400);
     assert.match((await fakeImage.json()).error, /imagen válida/i);
     let limitedUpload;
     for (let attempt = 0; attempt < 20; attempt += 1) {
       limitedUpload = await fetch(`http://127.0.0.1:${port}/api/uploads?name=falsa-${attempt}`, {
-        method: 'POST', headers: { 'Content-Type': 'image/png' }, body: 'esto tampoco es una imagen',
+        method: 'POST', headers: {
+          'Content-Type': 'image/png',
+          Authorization: `Basic ${Buffer.from('manager:clave-de-prueba-gestor-0123456789abcdef').toString('base64')}`,
+        }, body: 'esto tampoco es una imagen',
       });
     }
     assert.equal(limitedUpload.status, 429);

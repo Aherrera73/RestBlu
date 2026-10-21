@@ -15,6 +15,7 @@ export const FIREBASE_API_KEY = 'AIzaSyADKsieNglFr6XRdWOOCJUwQURz5uc8gKI';
 export const FIRESTORE_DOCUMENTS =
   `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
 export const FIREBASE_SESSION_KEY = 'lumastay_firebase_session_v1';
+export const LOCAL_FIREBASE_AUTH = process.env.NODE_ENV === 'development';
 // Servicio de pagos Webpay (Cloudflare Worker).
 export const PAYMENTS_API =
   process.env.NEXT_PUBLIC_RESTBLU_PAYMENTS_API?.trim() ||

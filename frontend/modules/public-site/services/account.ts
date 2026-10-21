@@ -1,11 +1,11 @@
-import { FIREBASE_API_KEY, FIREBASE_PROJECT_ID, FIREBASE_SESSION_KEY, FIRESTORE_DOCUMENTS } from '../config';
+import { FIREBASE_API_KEY, FIREBASE_PROJECT_ID, FIREBASE_SESSION_KEY, FIRESTORE_DOCUMENTS, LOCAL_FIREBASE_AUTH } from '../config';
 import type { CustomerAccount, FirebaseSession } from '../domain/types';
 import { ensureFirebaseSession, firestoreDocumentData, firestoreFields } from './firebase';
+import { firebaseIdentityUrl, firebaseTokenUrl } from './firebase-auth-endpoints';
 
 // Cuentas RestBlu con correo y contraseña sobre Firebase Authentication (REST).
 // La sesión se guarda en el mismo lugar que la sesión anónima.
 
-const IDENTITY = 'https://identitytoolkit.googleapis.com/v1';
 export const ACCOUNT_CHANGED_EVENT = 'restblu:account-changed';
 
 const AUTH_ERRORS: Record<string, string> = {
@@ -28,8 +28,9 @@ function authErrorMessage(code: string) {
 async function identityRequest<T>(path: string, body: Record<string, unknown>): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`${IDENTITY}/${path}?key=${encodeURIComponent(FIREBASE_API_KEY)}`, {
+    response = await fetch(firebaseIdentityUrl(path, FIREBASE_API_KEY, LOCAL_FIREBASE_AUTH), {
       method: 'POST',
+      credentials: 'omit',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
@@ -183,9 +184,10 @@ export async function refreshAccount() {
   let response: Response;
   try {
     response = await fetch(
-      `https://securetoken.googleapis.com/v1/token?key=${encodeURIComponent(FIREBASE_API_KEY)}`,
+      firebaseTokenUrl(FIREBASE_API_KEY, LOCAL_FIREBASE_AUTH),
       {
         method: 'POST',
+        credentials: 'omit',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: session.refreshToken }),
       },

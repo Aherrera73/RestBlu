@@ -317,3 +317,26 @@ CREATE TABLE dbo.ia_valoraciones (
   creado_at NVARCHAR(40) NOT NULL
 );
 GO
+
+-- Acceso privado de titulares de alojamientos, separado de owner_uid huésped.
+IF OBJECT_ID('dbo.propietarios', 'U') IS NULL
+CREATE TABLE dbo.propietarios (
+  id NVARCHAR(36) NOT NULL PRIMARY KEY,
+  firebase_uid NVARCHAR(128) COLLATE Latin1_General_100_BIN2 NOT NULL CONSTRAINT uq_propietarios_uid UNIQUE,
+  nombre NVARCHAR(120) NOT NULL,
+  correo NVARCHAR(160) NOT NULL CONSTRAINT uq_propietarios_correo UNIQUE,
+  telefono NVARCHAR(60) NOT NULL DEFAULT '',
+  activo BIT NOT NULL DEFAULT 1,
+  creado_at NVARCHAR(40) NOT NULL,
+  actualizado_at NVARCHAR(40) NOT NULL
+);
+GO
+IF OBJECT_ID('dbo.propietario_alojamientos', 'U') IS NULL
+CREATE TABLE dbo.propietario_alojamientos (
+  alojamiento_id INT NOT NULL PRIMARY KEY REFERENCES dbo.alojamientos(id) ON DELETE CASCADE,
+  propietario_id NVARCHAR(36) NOT NULL REFERENCES dbo.propietarios(id) ON DELETE CASCADE
+);
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'idx_propietario_alojamientos' AND object_id = OBJECT_ID('dbo.propietario_alojamientos'))
+CREATE INDEX idx_propietario_alojamientos ON dbo.propietario_alojamientos(propietario_id);
+GO

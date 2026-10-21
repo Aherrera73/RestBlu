@@ -245,7 +245,7 @@ function AccountAccess({ reason, onProfileSaved }: {
   );
 }
 
-function VerifyEmail({ account }: { account: CustomerAccount }) {
+export function VerifyEmail({ account, codeSent = true }: { account: CustomerAccount; codeSent?: boolean }) {
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -286,7 +286,8 @@ function VerifyEmail({ account }: { account: CustomerAccount }) {
       <MailCheck className="mx-auto size-14 text-[#07888d]" />
       <h1 className="mt-4 text-3xl font-bold tracking-tight">Verifica tu correo</h1>
       <p className="mt-3 leading-7 text-[#5d7a83]">
-        Enviamos un código de 6 dígitos a <strong>{account.email}</strong>. Escríbelo aquí para activar tu cuenta.
+        {codeSent ? 'Enviamos un código de 6 dígitos a ' : 'Solicita un código de 6 dígitos para '}
+        <strong>{account.email}</strong>. Escríbelo aquí para verificar tu correo.
       </p>
       <form onSubmit={verify} className="mt-6">
         <input
@@ -307,7 +308,7 @@ function VerifyEmail({ account }: { account: CustomerAccount }) {
       </form>
       <div className="mt-4 flex flex-wrap justify-center gap-3">
         <button type="button" disabled={busy} onClick={() => void resend()} className="rounded-xl px-4 py-2 text-sm font-bold text-[#0b6871] ring-1 ring-[#cfe2df] disabled:opacity-60">
-          Enviar otro código
+          {codeSent ? 'Enviar otro código' : 'Enviar código'}
         </button>
         <button type="button" onClick={logoutAccount} className="rounded-xl px-4 py-2 text-sm font-bold text-[#54727b]">
           Usar otra cuenta

@@ -359,3 +359,73 @@ dialog form > footer { border-top: 1px solid var(--line); }
 .ai-rating button.selected { border-color: var(--navy); box-shadow: 0 0 0 2px rgb(16 43 66 / .12); }
 .ai-rating button:disabled { cursor: default; opacity: .7; }
 .ai-rating span { color: #718993; font-size: 12px; }
+
+/* Propietarios conserva el azul del panel y hace explícita la asignación. */
+.sidebar { overflow-y: auto; }
+.owners-intro { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(240px, .7fr); gap: 28px; align-items: center; border-color: #cbdde9; background: linear-gradient(115deg, #f8fbff, #edf5fb); }
+.owners-intro .eyebrow { color: #24638c; }
+.owners-intro h2 { font-size: clamp(22px, 2.4vw, 30px); }
+.owners-intro p:last-child { max-width: 690px; margin: 12px 0 0; color: #526c80; font-size: 14px; line-height: 1.65; }
+.owners-steps { display: grid; gap: 13px; margin: 0; padding: 0; list-style: none; }
+.owners-steps li { display: flex; gap: 11px; align-items: center; color: #254d6b; font-size: 13px; font-weight: 750; }
+.owners-steps span { display: grid; flex: 0 0 30px; height: 30px; place-items: center; border: 1px solid #c2d8e9; border-radius: 10px; color: #1b547e; background: #fff; }
+.owners-overview article { border-color: #d4e1ec; }
+.owners-toolbar-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+#new-owner, #owner-save { background: #145a86; box-shadow: 0 8px 18px rgb(20 90 134 / .16); }
+#new-owner:hover, #owner-save:hover { background: #10496f; }
+.owners-feedback { min-height: 20px; margin: -3px 0 12px; color: #526c80; font-size: 13px; }
+.owners-feedback.failed { color: #9d2929; }
+.owners-table-panel th { background: #f0f5fa; }
+.owners-table-panel .badge.active { color: #17517c; background: #e3f0fb; }
+.owner-edit-button { min-height: 44px; padding-inline: 16px; color: #17517c; }
+.owner-edit-button:hover { color: #10466d; border-color: #94bad7; background: #f1f7fd; }
+.owner-contact { display: block; max-width: 310px; overflow-wrap: anywhere; line-height: 1.5; }
+.owner-contact + small { color: #71848e; }
+.owner-assigned-list { display: grid; gap: 5px; min-width: 160px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.owner-muted { color: #71848e; }
+#owner-dialog { width: min(720px, calc(100% - 30px)); border-radius: 22px; background: #f8fbfe; }
+#owner-dialog .icon-button { width: 44px; height: 44px; }
+#owner-dialog .form-body { max-height: 65vh; }
+#owner-dialog input:focus-visible { outline: 3px solid rgb(28 104 155 / .35); outline-offset: 2px; }
+#owner-dialog input:focus { border-color: #4386b5; box-shadow: 0 0 0 3px rgb(67 134 181 / .12); }
+#owner-dialog input[readonly] { color: #526c80; background: #edf2f7; }
+.owner-fields { min-width: 0; margin: 0; padding: 0; border: 0; }
+.owner-field-help { display: block; margin-top: 7px; color: #60798c; font-size: 12px; font-weight: 400; line-height: 1.5; }
+.owner-optional { color: #60798c; font-weight: 400; }
+.owner-account-note { margin: 20px 0; padding: 15px 17px; border: 1px solid #cedfee; border-radius: 13px; color: #234f71; background: #edf5fd; font-size: 13px; line-height: 1.6; }
+.owner-account-note p { margin: 4px 0 0; color: #526c80; }
+.owner-properties-fieldset { min-width: 0; margin: 0; padding: 16px; border: 1px solid #d0dfea; border-radius: 15px; background: #fff; }
+.owner-properties-fieldset legend { padding: 0 6px; color: #244d6c; font-size: 15px; font-weight: 800; }
+.owner-properties-fieldset > p { margin: 0 0 12px; color: #60798c; font-size: 12px; line-height: 1.5; }
+.owner-property-search { display: grid; gap: 6px; color: #375a73; font-size: 12px; font-weight: 750; }
+.owner-property-search input { width: 100%; min-height: 44px; border: 1px solid #cbdce8; border-radius: 10px; padding: 10px 12px; color: #173f5d; background: #fbfdff; }
+.owner-property-list { display: grid; max-height: 280px; overflow-y: auto; margin-top: 12px; border-block: 1px solid #e3ebf2; }
+.owner-property-option { display: flex; gap: 12px; min-height: 62px; align-items: center; padding: 11px 4px; cursor: pointer; }
+.owner-property-option + .owner-property-option { border-top: 1px solid #edf1f6; }
+.owner-property-option input, .owner-access-switch input { flex: 0 0 20px; width: 20px; height: 20px; margin: 0; accent-color: #145a86; cursor: pointer; }
+.owner-property-option strong, .owner-property-option small { display: block; overflow-wrap: anywhere; }
+.owner-property-option strong { color: #244d6c; font-size: 13px; }
+.owner-property-option small { margin-top: 4px; color: #60798c; font-size: 12px; line-height: 1.4; }
+.owner-property-option.unavailable { cursor: default; }
+.owner-property-option.unavailable input { cursor: not-allowed; }
+.owner-property-option .owner-property-unavailable { color: #865323; }
+.owner-property-empty { margin: 0; padding: 18px 6px; color: #60798c; font-size: 13px; line-height: 1.5; }
+.owner-properties-fieldset #owner-properties-count { margin: 11px 0 0; }
+.owner-access-switch { display: flex; gap: 12px; min-height: 64px; align-items: center; margin-top: 20px; cursor: pointer; }
+.owner-access-switch strong, .owner-access-switch small { display: block; }
+.owner-access-switch strong { color: #244d6c; font-size: 13px; }
+.owner-access-switch small { margin-top: 4px; color: #60798c; font-size: 12px; line-height: 1.5; }
+.owner-form-error { margin: 0 0 18px; border: 1px solid #e7b9b9; border-radius: 12px; padding: 12px 14px; color: #962727; background: #fff2f2; font-size: 14px; line-height: 1.5; }
+.owner-fields:disabled { opacity: .7; }
+@media (max-width: 980px) {
+  .owners-intro { grid-template-columns: 1fr; gap: 20px; }
+  .owners-steps { grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .owners-steps li { align-items: flex-start; }
+}
+@media (max-width: 620px) {
+  .owners-steps { grid-template-columns: 1fr; }
+  .owners-toolbar-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .owners-toolbar-actions .button { padding-inline: 11px; font-size: 13px; }
+  #owner-dialog .form-body { padding: 20px; }
+  #owner-dialog form > footer { flex-wrap: wrap; justify-content: flex-end; padding: 16px 20px; }
+}

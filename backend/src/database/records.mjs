@@ -20,7 +20,7 @@ export function flag(value) {
   return value === true || Number(value) === 1;
 }
 
-export const SCHEMA_VERSION = '9';
+export const SCHEMA_VERSION = '10';
 
 export const CUSTOMER_COLUMNS = [
   'id', 'nombre_completo', 'rut', 'correo', 'telefono', 'correo_verificado',

@@ -57,10 +57,17 @@ El portal local utiliza `http://localhost:3000` y el gestor `http://127.0.0.1:31
 
 La configuración privada del gestor vive fuera del repositorio, en `%LOCALAPPDATA%\RestBlu\.env.local`; hay ejemplos en `backend/.env.local.example`, `frontend/.env.example` y `dahua-hub/.env.example`. Para sincronización y correo se necesitan credenciales propias de Firebase Admin y SMTP. El hub y las funciones de acceso físico necesitan la configuración y el hardware correspondientes.
 
+## Panel de propietarios
+
+El gestor permite registrar propietarios y asignarles alojamientos. Cada persona
+entra con su propia cuenta desde `/propietarios` y consulta exclusivamente sus
+propiedades y reservas. La [guía de propietarios](documentacion/PROPIETARIOS_RESTBLU_2026-10-21.md)
+explica el alta, los indicadores, el acceso y los pasos pendientes de publicación.
+
 ## Verificación
 
 ```powershell
-cd frontend; npm run check
+cd frontend; npm test; npm run check
 cd ../backend; npm test
 cd ../dahua-hub; npm test
 cd ../payments-worker; node --test src/index.test.js

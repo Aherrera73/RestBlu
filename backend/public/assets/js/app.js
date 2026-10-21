@@ -1,6 +1,7 @@
 import { api, uploadImage } from './services/api.js';
 import { escapeHtml, money, shortDate } from './shared/formatters.js';
 import { PassiveFaceObservation } from './biometric-motion.js';
+import { createOwnersManager } from './owners-manager.js';
 
 const state = { properties: [], customers: [], reservations: [], database: null };
 const manualDoorState = new Map();
@@ -20,6 +21,7 @@ const titles = {
   security: 'Seguridad de viviendas',
   terminals: 'Terminales Dahua',
   accounts: 'Cuentas de clientes',
+  owners: 'Propietarios',
 };
 
 // Métodos de apertura según el registro del Dahua.
@@ -40,6 +42,8 @@ function showToast(message) {
   toast.classList.add('show');
   window.setTimeout(() => toast.classList.remove('show'), 2800);
 }
+
+const ownersManager = createOwnersManager({ onSaved: refresh, onNotice: showToast });
 
 function showImagePreview(slot, source) {
   const image = $(slot.preview);
@@ -101,6 +105,7 @@ function setView(view) {
   if (view === 'biometrics') void refreshBiometricStatus();
   if (view === 'security') { void refreshSecurity(); void refreshToday(); }
   if (view === 'accounts') void refreshAccounts();
+  if (view === 'owners') void ownersManager.refresh();
   clearInterval(state.terminalsTimer);
   if (view === 'terminals') {
     void refreshTerminals();

@@ -25,6 +25,7 @@
           <button class="nav-item" data-view="security"><span>08</span> Seguridad</button>
           <button class="nav-item" data-view="terminals"><span>09</span> Terminales</button>
           <button class="nav-item" data-view="accounts"><span>10</span> Cuentas</button>
+          <button class="nav-item" data-view="owners"><span>11</span> Propietarios</button>
         </nav>
         <div class="local-note">
           <span class="status-dot"></span>
@@ -247,6 +248,42 @@
           </section>
         </section>
 
+        <section id="owners-view" class="view" aria-labelledby="view-title">
+          <section class="panel owners-intro">
+            <div>
+              <p class="eyebrow">ACCESO PERSONAL</p>
+              <h2>Cada propietario, sus alojamientos</h2>
+              <p>Registra a la persona, asigna sus espacios y habilita su panel. Cada propietario entra al sitio con su propia cuenta y sólo puede consultar los alojamientos asignados.</p>
+            </div>
+            <ol class="owners-steps" aria-label="Cómo habilitar el acceso">
+              <li><span>1</span> Registra su correo</li>
+              <li><span>2</span> Asigna alojamientos</li>
+              <li><span>3</span> Entra desde Propietarios</li>
+            </ol>
+          </section>
+          <div class="access-overview owners-overview" aria-label="Resumen de propietarios">
+            <article><span>Propietarios registrados</span><strong id="owners-total">—</strong><small>con cuenta propia</small></article>
+            <article><span>Accesos habilitados</span><strong id="owners-active">—</strong><small>pueden entrar a su panel</small></article>
+            <article><span>Alojamientos asignados</span><strong id="owners-assigned">—</strong><small>vinculados a un propietario</small></article>
+          </div>
+          <div class="toolbar">
+            <label class="search-field"><span>Buscar</span><input id="owners-search" type="search" placeholder="Nombre, correo o alojamiento" /></label>
+            <div class="owners-toolbar-actions">
+              <button type="button" id="owners-refresh" class="button secondary">Actualizar</button>
+              <button type="button" id="new-owner" class="button primary" disabled>+ Registrar propietario</button>
+            </div>
+          </div>
+          <p id="owners-feedback" class="owners-feedback" role="status" aria-live="polite"></p>
+          <section class="panel table-panel owners-table-panel" aria-label="Propietarios registrados">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Propietario</th><th>Contacto</th><th>Alojamientos</th><th>Acceso al panel</th><th>Acción</th></tr></thead>
+                <tbody id="owners-table"><tr><td colspan="5" class="empty">Abre esta sección para cargar los propietarios.</td></tr></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
         <section id="accounts-view" class="view" aria-labelledby="view-title">
           <section class="panel biometric-intro">
             <div>
@@ -343,6 +380,32 @@
       </main>
     </div>
 
+    <dialog id="owner-dialog" aria-labelledby="owner-dialog-title">
+      <form id="owner-form">
+        <header><div><p class="eyebrow">PROPIETARIO</p><h2 id="owner-dialog-title">Registrar propietario</h2></div><button type="button" class="icon-button close-owner" aria-label="Cerrar ficha de propietario">×</button></header>
+        <div class="form-body">
+          <p id="owner-form-error" class="owner-form-error" role="alert" tabindex="-1" hidden></p>
+          <fieldset id="owner-fields" class="owner-fields">
+            <div class="form-grid">
+              <label class="wide" for="owner-name">Nombre completo<input id="owner-name" name="name" autocomplete="name" maxlength="120" required /></label>
+              <label class="wide" for="owner-email">Correo de su cuenta<input id="owner-email" name="email" type="email" autocomplete="email" maxlength="160" aria-describedby="owner-email-help" required /><small id="owner-email-help" class="owner-field-help">Se vincula una cuenta con este correo, o se crea si todavía no existe.</small></label>
+              <label class="wide" for="owner-phone">Teléfono <span class="owner-optional">(opcional)</span><input id="owner-phone" name="phone" type="tel" autocomplete="tel" maxlength="60" /></label>
+            </div>
+            <div class="owner-account-note"><strong>Su contraseña es personal</strong><p>No se solicita ni se envía una contraseña desde el gestor. El propietario puede establecerla o restablecerla desde el acceso de su cuenta en el sitio y debe verificar su correo para entrar al panel. Este registro no envía un correo automático.</p></div>
+            <fieldset class="owner-properties-fieldset">
+              <legend>Alojamientos asignados</legend>
+              <p id="owner-properties-help">Sólo verá estos alojamientos y sus reservas. Un alojamiento puede pertenecer a un solo propietario.</p>
+              <label class="owner-property-search" for="owner-property-search">Buscar alojamiento<input id="owner-property-search" type="search" placeholder="Nombre o ubicación" /></label>
+              <div id="owner-properties" class="owner-property-list" aria-describedby="owner-properties-help"></div>
+              <p id="owner-properties-count" class="owner-field-help" aria-live="polite"></p>
+            </fieldset>
+            <label class="owner-access-switch" for="owner-active"><input id="owner-active" name="active" type="checkbox" checked /><span><strong>Acceso al panel habilitado</strong><small>Al desactivarlo pierde el acceso al panel de propietarios. Sus alojamientos conservan la asignación.</small></span></label>
+          </fieldset>
+        </div>
+        <footer><button type="button" class="button secondary close-owner">Cancelar</button><button id="owner-save" type="submit" class="button primary">Registrar propietario</button></footer>
+      </form>
+    </dialog>
+
     <dialog id="property-dialog">
       <form id="property-form" method="dialog">
         <header><div><p class="eyebrow">ALOJAMIENTO</p><h2 id="property-dialog-title">Nuevo alojamiento</h2></div><button type="button" class="icon-button close-dialog" aria-label="Cerrar">×</button></header>
@@ -370,6 +433,7 @@
             <fieldset class="image-fieldset wide">
               <legend>Propietario · información privada</legend>
               <p>Estos datos solo aparecen en el gestor y se entregan al huésped cuando la reserva queda confirmada.</p>
+              <p>Para habilitar el panel privado de esta persona, regístrala y asígnale este alojamiento en la sección <strong>Propietarios</strong>.</p>
               <div class="form-grid">
                 <label>Nombre completo<input id="property-owner-name" required maxlength="120" /></label>
                 <label>RUT<input id="property-owner-document" required maxlength="12" placeholder="12.345.678-5" /></label>
