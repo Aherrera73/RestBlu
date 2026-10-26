@@ -124,15 +124,15 @@ export default function PropertyAvailabilityCalendar({
             key={kind}
             type="button"
             onClick={() => openCalendar(kind)}
-            className="min-w-0 rounded-lg bg-[#f2f8f7] px-2 py-2 text-left font-bold text-[#173f4b] outline-none hover:bg-[#e3f3ef] focus-visible:ring-2 focus-visible:ring-[#54d9ce]"
+            className="min-h-18 min-w-0 rounded-lg bg-[#f2f8f7] px-3 py-3 text-left font-medium text-[#173f4b] outline-none hover:bg-[#e3f3ef] focus-visible:ring-2 focus-visible:ring-[#54d9ce]"
             aria-label={`${kind === 'checkIn' ? 'Check-in' : 'Check-out'}: ${search[kind] ? formatDate(search[kind]) : 'seleccionar fecha'}. Abrir calendario de ${property.name}`}
           >
-            <span className="block text-[10px] font-bold uppercase text-[#78939a]">
-              {kind === 'checkIn' ? 'Check-in' : 'Check-out'}
+            <span className="block text-sm text-[#55727a]">
+              {kind === 'checkIn' ? 'Llegada' : 'Salida'}
             </span>
             <span className="mt-1 flex items-center gap-1.5 text-xs sm:text-sm">
               <CalendarDays className="size-4 shrink-0 text-[#0b8e92]" />
-              <span className="min-w-0 truncate">{search[kind] ? formatDate(search[kind]) : 'Elegir fecha'}</span>
+              <span className="min-w-0">{search[kind] ? new Intl.DateTimeFormat('es-CL', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${search[kind]}T12:00:00Z`)) : 'Elegir fecha'}</span>
             </span>
           </button>
         ))}

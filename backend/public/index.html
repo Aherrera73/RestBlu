@@ -6,26 +6,31 @@
     <meta name="description" content="Gestor local de datos de RestBlu" />
     <title>Gestor local RestBlu</title>
     <link rel="stylesheet" href="/assets/css/styles.css" />
+    <link rel="stylesheet" href="/assets/css/manager-design.css?v=20261026-2" />
   </head>
   <body>
     <div class="shell">
       <aside class="sidebar">
-        <div class="brand">
+        <div class="sidebar-heading"><div class="brand">
           <span class="brand-mark" aria-hidden="true">RB</span>
-          <span class="brand-copy"><strong>RestBlu</strong><small>CONTROL LOCAL</small></span>
-        </div>
-        <nav aria-label="Secciones del gestor">
-          <button class="nav-item active" data-view="summary"><span>01</span> Pulso</button>
-          <button class="nav-item" data-view="properties"><span>02</span> Espacios</button>
-          <button class="nav-item" data-view="customers"><span>03</span> Viajeros</button>
-          <button class="nav-item" data-view="reservations"><span>04</span> Estadías</button>
-          <button class="nav-item" data-view="ai"><span>05</span> RestBlu IA</button>
-          <button class="nav-item" data-view="biometrics"><span>06</span> Biometría</button>
-          <button class="nav-item" data-view="access"><span>07</span> Accesos</button>
-          <button class="nav-item" data-view="security"><span>08</span> Seguridad</button>
-          <button class="nav-item" data-view="terminals"><span>09</span> Terminales</button>
-          <button class="nav-item" data-view="accounts"><span>10</span> Cuentas</button>
-          <button class="nav-item" data-view="owners"><span>11</span> Propietarios</button>
+          <span class="brand-copy"><strong>RestBlu</strong><small>Gestor de alojamientos</small></span>
+        </div><button type="button" id="manager-menu-toggle" class="manager-menu-toggle" aria-expanded="false" aria-controls="manager-navigation">Menú <svg aria-hidden="true" viewBox="0 0 24 24" class="nav-icon"><path d="M4 6h16M4 12h16M4 18h16" /></svg></button></div>
+        <nav id="manager-navigation" aria-label="Secciones del gestor">
+          <p class="nav-group-label">Operación</p>
+          <button class="nav-item active" data-view="summary" aria-current="page"><svg aria-hidden="true" viewBox="0 0 24 24" class="nav-icon"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span class="nav-label">Pulso</span></button>
+          <button class="nav-item" data-view="reservations"><svg aria-hidden="true" viewBox="0 0 24 24" class="nav-icon"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18m-13 5h3m3 0h2"/></svg><span class="nav-label">Estadías</span></button>
+          <button class="nav-item" data-view="properties"><svg aria-hidden="true" viewBox="0 0 24 24" class="nav-icon"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-8H9v8H4a1 1 0 0 1-1-1Z"/></svg><span class="nav-label">Espacios</span></button>
+          <button class="nav-item" data-view="customers"><svg aria-hidden="true" viewBox="0 0 24 24" class="nav-icon"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3m2-17a3 3 0 0 1 0 6m1 5a5 5 0 0 1 3 5"/></svg><span class="nav-label">Viajeros</span></button>
+          <p class="nav-group-label">Administración</p>
+          <button class="nav-item" data-view="owners"><svg aria-hidden="true" viewBox="0 0 24 24" class="nav-icon"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="9" r="2.5"/><path d="M8 18a4 4 0 0 1 8 0"/></svg><span class="nav-label">Propietarios</span></button>
+          <button class="nav-item" data-view="accounts"><svg aria-hidden="true" viewBox="0 0 24 24" class="nav-icon"><circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 10-4m3 3 2 2 4-5"/></svg><span class="nav-label">Cuentas</span></button>
+          <p class="nav-group-label">Seguridad y acceso</p>
+          <button class="nav-item" data-view="security"><svg aria-hidden="true" viewBox="0 0 24 24" class="nav-icon"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6Z"/><path d="m8 12 3 3 5-6"/></svg><span class="nav-label">Seguridad</span></button>
+          <button class="nav-item" data-view="access"><svg aria-hidden="true" viewBox="0 0 24 24" class="nav-icon"><path d="M4 21h16M7 21V4l10-1v18m-3-9h.01M3 9h5m-2-2 2 2-2 2"/></svg><span class="nav-label">Accesos</span></button>
+          <button class="nav-item" data-view="terminals"><svg aria-hidden="true" viewBox="0 0 24 24" class="nav-icon"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M9 6h6M9 10h6m-5 8h4"/></svg><span class="nav-label">Terminales</span></button>
+          <button class="nav-item" data-view="biometrics"><svg aria-hidden="true" viewBox="0 0 24 24" class="nav-icon"><path d="M8 3H4v4m12-4h4v4M4 17v4h4m12-4v4h-4M8 9h.01M16 9h.01M12 9v4m-4 3a6 6 0 0 0 8 0"/></svg><span class="nav-label">Biometría</span></button>
+          <p class="nav-group-label">Asistencia</p>
+          <button class="nav-item" data-view="ai"><svg aria-hidden="true" viewBox="0 0 24 24" class="nav-icon"><path d="M21 11a8 8 0 0 1-8 8H7l-4 3V11a9 9 0 0 1 18 0Z"/><path d="M8 10h8m-8 4h5"/></svg><span class="nav-label">RestBlu IA</span></button>
         </nav>
         <div class="local-note">
           <span class="status-dot"></span>
@@ -36,30 +41,29 @@
       <main>
         <header class="topbar">
           <div>
-            <p class="eyebrow">RESTBLU / CENTRO DE CONTROL</p>
-            <h1 id="view-title">Pulso general</h1>
+            <p class="eyebrow">Tu centro de operación</p>
+            <h1 id="view-title" tabindex="-1">Pulso general</h1>
           </div>
           <div class="top-actions">
             <a class="button secondary" href="/api/backup" download><span aria-hidden="true">↓</span> Descargar respaldo</a>
-            <a class="button primary" href="http://localhost:3000" target="_blank" rel="noreferrer">Abrir sitio <span aria-hidden="true">↗</span></a>
+            <a class="button primary" href="https://restblu.web.app" target="_blank" rel="noreferrer">Ver web pública <span aria-hidden="true">↗</span></a>
           </div>
         </header>
 
         <section id="summary-view" class="view active" aria-labelledby="view-title">
           <section class="pulse-board">
             <div class="pulse-intro">
-              <span class="live-chip"><i></i> SINCRONIZACIÓN LOCAL</span>
-              <p>Una vista directa de lo que está publicado, quién reservó y qué estadías se generaron.</p>
+              <p>Tu operación, de un vistazo.</p>
             </div>
             <div class="stats">
-              <article><span>Espacios en línea</span><strong id="stat-properties">0</strong><small>visibles en el catálogo</small></article>
+              <article><span>Espacios publicados</span><strong id="stat-properties">0</strong><small>visibles en el catálogo</small></article>
               <article><span>Viajeros</span><strong id="stat-customers">0</strong><small>fichas locales</small></article>
               <article><span>Estadías</span><strong id="stat-reservations">0</strong><small>reservas registradas</small></article>
             </div>
           </section>
           <section class="panel today-panel">
             <div class="panel-heading">
-              <div><p class="eyebrow">HOY</p><h2 id="today-title">Resumen del día</h2></div>
+              <div><h2 id="today-title">Resumen del día</h2><p class="panel-description">Llegadas, salidas y pendientes que necesitan tu atención.</p></div>
               <button type="button" id="today-refresh" class="text-button">Actualizar</button>
             </div>
             <div id="today-alerts" class="today-alerts"></div>
@@ -68,22 +72,22 @@
           <div class="dashboard-grid">
             <section class="panel activity-panel">
               <div class="panel-heading">
-                <div><p class="eyebrow">MOVIMIENTO RECIENTE</p><h2>Últimas estadías</h2></div>
+                <div><h2>Últimas estadías</h2></div>
                 <button class="text-button" data-go="reservations">Abrir registro <span aria-hidden="true">→</span></button>
               </div>
               <div id="recent-reservations" class="activity-list"></div>
             </section>
-            <section class="panel route-panel">
-              <p class="eyebrow">BASE DE DATOS</p>
+            <section class="panel work-panel" aria-labelledby="work-title"><h2 id="work-title">A mano</h2><div class="work-links"><button type="button" data-go="reservations">Revisar estadías <span aria-hidden="true">→</span></button><button type="button" data-go="properties">Gestionar espacios <span aria-hidden="true">→</span></button><button type="button" data-go="owners">Ver propietarios <span aria-hidden="true">→</span></button><button type="button" data-go="security">Revisar accesos <span aria-hidden="true">→</span></button></div></section>
+          </div>
+          <details class="panel route-panel"><summary>Información de la base de datos</summary><div class="database-details">
               <h2 id="database-engine-title">Base de datos para DBeaver</h2>
               <ol class="publish-flow">
                 <li><span>1</span><div><strong>Alojamientos</strong><small>Ficha, ubicación, capacidad, valores e imágenes.</small></div></li>
                 <li><span>2</span><div><strong>Clientes</strong><small>RUT, contacto, verificación y antecedentes.</small></div></li>
                 <li><span>3</span><div><strong>Estadías</strong><small>Fechas, cobros, acceso, correo y PDF.</small></div></li>
               </ol>
-              <div class="database-path"><span>ARCHIVO SQLITE</span><code id="database-path">Cargando…</code></div>
-            </section>
-          </div>
+              <div class="database-path"><span>Ubicación de la base</span><code id="database-path">Cargando…</code></div>
+          </div></details>
         </section>
 
         <section id="properties-view" class="view" aria-labelledby="view-title">
@@ -551,6 +555,6 @@
     </dialog>
 
     <output id="toast" aria-live="polite"></output>
-    <script src="/assets/js/app.js" type="module"></script>
+    <script src="/assets/js/app.js?v=20261026-2" type="module"></script>
   </body>
 </html>

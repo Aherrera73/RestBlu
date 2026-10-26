@@ -97,9 +97,21 @@ async function refresh() {
 }
 
 function setView(view) {
-  $$('.nav-item').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
+  $$('.nav-item').forEach((button) => {
+    const selected = button.dataset.view === view;
+    button.classList.toggle('active', selected);
+    if (selected) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
   $$('.view').forEach((section) => section.classList.toggle('active', section.id === `${view}-view`));
   $('#view-title').textContent = titles[view];
+  const navigationWasOpen = $('.sidebar').classList.contains('nav-open');
+  $('.sidebar').classList.remove('nav-open');
+  $('#manager-menu-toggle').setAttribute('aria-expanded', 'false');
+  if (navigationWasOpen) {
+    $('#view-title').focus({ preventScroll: true });
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
   if (view === 'ai') { void refreshAiStatus(); void refreshAiFeedback(); }
   if (view === 'summary') void refreshToday();
   if (view === 'biometrics') void refreshBiometricStatus();
@@ -644,7 +656,7 @@ function renderProperties() {
       <td>${property.guests} huéspedes · ${property.beds} dorm.</td>
       <td>${money(property.price)}</td>
       <td><span class="badge ${property.active === false ? 'inactive' : 'active'}">${property.active === false ? 'Oculto' : 'Publicado'}</span></td>
-      <td><div class="row-actions">${doorButton(property)}<button class="small-button" data-assign-terminal="${property.id}">${property.dahuaRegistrationId ? 'Terminal' : 'Asignar terminal'}</button><button class="small-button" data-edit-property="${property.id}">Editar</button><button class="small-button" data-toggle-property="${property.id}">${property.active === false ? 'Publicar' : 'Ocultar'}</button><button class="small-button danger" data-delete-property="${property.id}">Eliminar</button></div></td>
+      <td><div class="row-actions"><button class="small-button" data-edit-property="${property.id}">Editar</button><details class="row-more"><summary>Más opciones</summary><div class="row-more-content">${doorButton(property)}<button class="small-button" data-assign-terminal="${property.id}">${property.dahuaRegistrationId ? 'Terminal' : 'Asignar terminal'}</button><button class="small-button" data-toggle-property="${property.id}">${property.active === false ? 'Publicar' : 'Ocultar'}</button><button class="small-button danger" data-delete-property="${property.id}">Eliminar</button></div></details></div></td>
     </tr>`).join('') : '<tr><td colspan="7" class="empty">No hay alojamientos que coincidan con la búsqueda.</td></tr>';
 }
 
@@ -1089,6 +1101,22 @@ async function verifyBiometricIdentity(scanId) {
   }
 }
 
+$('#manager-menu-toggle').addEventListener('click', () => {
+  const expanded = $('.sidebar').classList.toggle('nav-open');
+  $('#manager-menu-toggle').setAttribute('aria-expanded', String(expanded));
+});
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && $('.sidebar').classList.contains('nav-open')) {
+    $('.sidebar').classList.remove('nav-open');
+    $('#manager-menu-toggle').setAttribute('aria-expanded', 'false');
+    $('#manager-menu-toggle').focus();
+  }
+});
+$$('.table-wrap').forEach((wrapper) => {
+  wrapper.tabIndex = 0;
+  wrapper.setAttribute('role', 'region');
+  wrapper.setAttribute('aria-label', 'Tabla de datos; desplázate para ver todas las columnas');
+});
 $$('.nav-item').forEach((button) => button.addEventListener('click', () => setView(button.dataset.view)));
 $$('[data-go]').forEach((button) => button.addEventListener('click', () => setView(button.dataset.go)));
 $('#property-search').addEventListener('input', renderProperties);

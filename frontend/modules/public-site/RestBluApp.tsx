@@ -2,7 +2,7 @@
 
 /* oxlint-disable next/no-img-element */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
@@ -1160,11 +1160,11 @@ function Header({ screen, go, account }: {
     go(next);
   }
   return (
-    <header className="sticky top-0 z-30 border-b border-[#dce8ef] bg-[#f7fafc]/95 backdrop-blur-md">
+    <header className="restblu-header sticky top-0 z-30 bg-[#f7fafc]">
       <div className="mx-auto flex min-h-20 max-w-7xl items-center justify-between gap-3 px-5 lg:px-8">
         <button type="button" onClick={() => navigate('inicio')} aria-label="RestBlu, ir al inicio" className="flex min-h-11 shrink-0 items-center gap-2.5 text-left">
           <span aria-hidden="true" className="grid size-10 place-items-center rounded-[50%_50%_12px_50%] bg-[#103d50] text-xs font-bold tracking-[-.06em] text-[#c2edf1]">RB</span>
-          <span><span className="block text-xl font-semibold tracking-[-.04em] text-[#102d3f]">Rest<span className="text-[#0b8996]">Blu</span></span><span className="block text-[8px] font-medium tracking-[.2em] text-[#5c7c8d]">ESTADÍAS A TU RITMO</span></span>
+          <span className="block text-2xl font-semibold tracking-[-.04em] text-[#102d3f]">Rest<span className="text-[#0b8996]">Blu</span></span>
         </button>
         <nav aria-label="Navegación principal" className="hidden items-center gap-1 xl:flex">
           {publicNav.map((item) => (
@@ -1202,6 +1202,8 @@ function Landing({ go, properties, onSelect, saved, onSave, search, setSearch, o
     <StayLanding
       onExplore={() => go('catalogo')}
       onLookup={() => go('consulta')}
+      highlight={properties[0]}
+      onSelectHighlight={() => { if (properties[0]) onSelect(properties[0]); }}
       searchBox={<SearchBox properties={properties} search={search} setSearch={setSearch} onSearch={onSearch} />}
       featured={properties.slice(0, 3).map((property) => (
         <PropertyCard key={property.id} property={property} saved={saved.includes(property.id)} onSave={() => onSave(property.id)} onSelect={() => onSelect(property)} />
@@ -1230,7 +1232,7 @@ function SearchBox({
         event.preventDefault();
         onSearch();
       }}
-      className={`relative z-10 grid gap-2 rounded-2xl border border-[#d7e7ef] bg-white p-3 ${compact ? 'mt-7 shadow-sm md:grid-cols-[1.35fr_1fr_1fr_.8fr_auto]' : 'shadow-[0_12px_36px_-18px_rgba(31,65,45,.25)] sm:grid-cols-2 lg:grid-cols-[1.35fr_1fr_1fr_.8fr_auto] [&>button]:sm:col-span-2 [&>button]:lg:col-span-1'}`}
+      className={`restblu-search ${compact ? 'is-compact' : ''}`}
     >
       <SearchField
         id={compact ? 'catalog-destination' : 'home-destination'}
@@ -1260,7 +1262,7 @@ function SearchBox({
       <SearchField
         id={compact ? 'catalog-checkin' : 'home-checkin'}
         icon={<CalendarDays />}
-        label="Check-in"
+        label="Llegada"
       >
         <input
           id={compact ? 'catalog-checkin' : 'home-checkin'}
@@ -1276,7 +1278,7 @@ function SearchBox({
       <SearchField
         id={compact ? 'catalog-checkout' : 'home-checkout'}
         icon={<CalendarDays />}
-        label="Check-out"
+        label="Salida"
       >
         <input
           id={compact ? 'catalog-checkout' : 'home-checkout'}
@@ -1311,9 +1313,9 @@ function SearchBox({
       </SearchField>
       <button
         type="submit"
-        className="flex items-center justify-center gap-2 rounded-xl bg-[#0b6871] px-5 py-3 text-sm font-bold text-white hover:bg-[#07565d] focus:outline-none focus:ring-2 focus:ring-[#54d9ce] focus:ring-offset-2"
+        className="restblu-primary-button"
       >
-        <Search size={17} /> Buscar
+        <Search aria-hidden="true" size={18} /> Buscar
       </button>
     </form>
   );
@@ -1333,11 +1335,11 @@ function SearchField({
   return (
     <label
       htmlFor={id}
-      className="flex min-w-0 items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-[#f2f8f7] focus-within:bg-[#f2f8f7] focus-within:ring-2 focus-within:ring-[#71d8cf]"
+      className="restblu-search-field"
     >
       <span aria-hidden="true" className="shrink-0 text-[#0b788b]">{icon}</span>
       <span className="min-w-0 flex-1">
-        <span className="mb-0.5 block text-[10px] font-semibold uppercase tracking-wider text-[#56788a]">
+        <span className="restblu-field-label">
           {label}
         </span>
         {children}
@@ -1375,17 +1377,13 @@ function Catalog({
 }) {
   const filters = ['Todos', 'Mar', 'Piscina', 'Naturaleza', 'Mascotas'];
   return (
-    <section className="mx-auto max-w-7xl px-5 py-11 lg:px-8 lg:py-16">
+    <section className="restblu-catalog restblu-container">
       <div className="max-w-2xl">
-        <p className="text-xs font-bold uppercase tracking-[.16em] text-[#07888d]">
-          ALOJAMIENTOS
-        </p>
-        <h1 className="restblu-display mt-3 text-4xl leading-[1.12] tracking-[-.035em] sm:text-5xl">
-          Una estadía para cada forma de escapar.
+        <h1 className="restblu-display text-4xl leading-[1.12] tracking-[-.035em] sm:text-5xl">
+          Encuentra tu lugar.
         </h1>
-        <p className="mt-3 leading-6 text-[#648088]">
-          Explora propiedades con disponibilidad, detalles claros y acceso
-          inteligente incluido.
+        <p className="mt-4 leading-7 text-[#55727a]">
+          Elige dónde y cuándo. Nosotros te mostramos los alojamientos.
         </p>
       </div>
       <SearchBox
@@ -1395,7 +1393,7 @@ function Catalog({
         onSearch={onSearch}
         compact
       />
-      <div className="mt-8 flex flex-wrap items-center justify-between gap-4 border-y border-[#dbe9e7] py-4">
+      <div className="restblu-catalog-filters mt-8 flex flex-wrap items-center justify-between gap-4 py-4">
         <div className="flex flex-wrap gap-2">
           {filters.map((item) => (
             <button
@@ -1415,11 +1413,11 @@ function Catalog({
           <SlidersHorizontal size={17} /> Limpiar búsqueda
         </button>
       </div>
-      <div className="mt-6 flex flex-wrap items-center justify-between gap-2 text-sm text-[#6d8890]">
-        <p>
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-2 text-sm text-[#55727a]">
+        <output aria-live="polite" aria-atomic="true">
           <strong className="text-[#173f4b]">{properties.length}</strong>{' '}
-          alojamientos encontrados
-        </p>
+          {properties.length === 1 ? 'alojamiento encontrado' : 'alojamientos encontrados'}
+        </output>
         {(criteria.destination || criteria.checkIn) && (
           <p>
             {criteria.destination || 'Todos los destinos'}
@@ -1430,7 +1428,7 @@ function Catalog({
         )}
       </div>
       {properties.length > 0 ? (
-        <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="restblu-property-grid mt-6">
           {properties.map((property) => (
             <PropertyCard
               key={property.id}
@@ -1470,33 +1468,33 @@ function PropertyCard({ property, saved, onSave, onSelect }: {
   onSelect: () => void;
 }) {
   return (
-    <motion.article initial={false} whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className="restblu-property-card group overflow-hidden rounded-[20px] border border-[#dce8ef] bg-white shadow-[0_4px_16px_-12px_rgba(25,63,53,.18)]">
+    <article className="restblu-property-card group">
       <div className="relative overflow-hidden bg-[#eaf2f7]">
-        <button type="button" onClick={onSelect} aria-label={`Ver alojamiento ${property.name}`} className="block h-60 w-full overflow-hidden text-left">
+        <button type="button" onClick={onSelect} aria-label={`Ver alojamiento ${property.name}`} className="restblu-card-photo block w-full overflow-hidden text-left">
           <img src={property.image} alt={property.name} loading="lazy" width={800} height={550} className="restblu-property-image h-full w-full object-cover" />
         </button>
-        <motion.button type="button" whileTap={{ scale: 0.9 }} aria-label={saved ? `Quitar ${property.name} de favoritos` : `Guardar ${property.name} en favoritos`} aria-pressed={saved} onClick={onSave} className={`absolute right-3 top-3 grid size-11 place-items-center rounded-full shadow-sm backdrop-blur-sm transition-colors ${saved ? 'bg-[#103d50] text-white' : 'bg-white/95 text-[#2f6279] hover:bg-white'}`}>
+        <button type="button" aria-label={saved ? `Quitar ${property.name} de favoritos` : `Guardar ${property.name} en favoritos`} aria-pressed={saved} onClick={onSave} className={`restblu-save-button absolute right-3 top-3 grid size-11 place-items-center rounded-full transition-colors ${saved ? 'bg-[#103d50] text-white' : 'bg-white text-[#2f6279] hover:bg-[#edf5fa]'}`}>
           <Heart aria-hidden="true" size={18} fill={saved ? 'currentColor' : 'none'} />
-        </motion.button>
-        <span className="pointer-events-none absolute bottom-4 left-4 rounded-full bg-white/95 px-3 py-1.5 text-[11px] font-medium text-[#1d4d64]">{property.type}</span>
+        </button>
       </div>
-      <div className="p-5">
-        <div className="flex items-center justify-between gap-3 text-xs">
+      <div className="restblu-card-copy">
+        <div className="flex items-center justify-between gap-3 text-sm">
           <p className="flex items-center gap-1.5 text-[#58788b]"><MapPin aria-hidden="true" size={13} />{property.place}</p>
           <span className="flex shrink-0 items-center gap-1 font-semibold text-[#245570]"><Star aria-hidden="true" size={13} fill="#b68e42" className="text-[#b68e42]" /><span className="sr-only">Valoración </span>{property.rating}</span>
         </div>
-        <h3 className="mt-2 text-lg font-semibold tracking-[-.02em] text-[#153d56]"><button type="button" onClick={onSelect} className="min-h-9 text-left hover:text-[#087b8c]">{property.name}</button></h3>
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[11px] text-[#5a788b]">
+        <h3 className="mt-1 text-xl font-semibold tracking-[-.025em] text-[#153d56]"><button type="button" onClick={onSelect} className="min-h-11 text-left hover:text-[#087b8c]">{property.name}</button></h3>
+        <p className="text-sm text-[#55727a]">{property.type}</p>
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[13px] text-[#5a788b]">
           <span className="flex items-center gap-1.5"><Users aria-hidden="true" size={14} />{property.guests} huéspedes</span>
           <span className="flex items-center gap-1.5"><BedDouble aria-hidden="true" size={14} />{property.beds} camas</span>
           <span className="flex items-center gap-1.5"><Bath aria-hidden="true" size={14} />{property.baths} baños</span>
         </div>
-        <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#e4edf3] pt-4">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
           <p className="text-lg font-semibold tracking-[-.03em] text-[#17465e]">{property.price}<span className="text-xs font-normal tracking-normal text-[#5a788b]"> / noche</span></p>
           <button type="button" onClick={onSelect} className="inline-flex min-h-11 items-center gap-2 text-xs font-semibold text-[#0b6871]">Ver detalle <ArrowRight aria-hidden="true" size={15} /></button>
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }
 
@@ -1569,7 +1567,7 @@ function PropertyDetail({
   }, [viewerIndex, galleryImages.length]);
 
   return (
-    <section className="mx-auto max-w-7xl px-5 py-8 lg:px-8">
+    <section className="restblu-property-detail restblu-container py-8">
       <button
         onClick={onBack}
         className="mb-5 flex items-center gap-2 text-sm font-bold text-[#4b6d75]"
@@ -1671,13 +1669,14 @@ function PropertyDetail({
             digital con instrucciones de llegada y acceso seguro.
           </p>
         </div>
-        <aside className="h-fit rounded-3xl border border-[#d8e7e5] bg-white p-6 shadow-lg">
-          <p className="text-sm font-bold text-[#07888d]">Desde</p>
+        <aside className="restblu-booking-panel h-fit lg:sticky lg:top-28" aria-label="Fechas y precio de tu estadía">
+          <h2 className="text-lg font-semibold tracking-tight">Tu estadía empieza aquí.</h2>
+          <p className="mt-5 text-sm text-[#55727a]">Tarifa por noche</p>
           <p className="mt-1 text-3xl font-bold">
             {property.price}
             <span className="text-sm font-medium text-[#779199]"> / noche</span>
           </p>
-          <div className="mt-5 space-y-3 rounded-xl border border-[#dce9e7] p-3 text-sm">
+          <div className="mt-5 space-y-3 text-sm">
             <PropertyAvailabilityCalendar
               property={property}
               search={search}
@@ -1685,7 +1684,7 @@ function PropertyDetail({
               onNotice={onNotice}
             />
             <label className="block border-t border-[#e1ecea] pt-3">
-              <span className="text-[10px] font-bold uppercase text-[#78939a]">
+              <span className="text-sm font-medium text-[#55727a]">
                 Huéspedes
               </span>
               <select
@@ -1693,7 +1692,7 @@ function PropertyDetail({
                 onChange={(event) =>
                   setSearch({ ...search, guests: Number(event.target.value) })
                 }
-                className="mt-1 w-full rounded-lg bg-[#f2f8f7] px-2 py-2 font-bold outline-none focus:ring-2 focus:ring-[#54d9ce]"
+                className="mt-2 min-h-12 w-full rounded-lg bg-[#f2f8f7] px-3 py-2 text-base font-medium outline-none focus:ring-2 focus:ring-[#54d9ce]"
               >
                 {Array.from(
                   { length: property.guests },
@@ -1709,32 +1708,32 @@ function PropertyDetail({
           {nights > 0 && (
             <div className="mt-4 flex items-center justify-between rounded-xl bg-[#eaf6f4] px-3 py-3 text-sm">
               <span className="text-[#55727a]">
-                {nights} {nights === 1 ? 'noche' : 'noches'}
+                Total por {nights} {nights === 1 ? 'noche' : 'noches'}
               </span>
               <strong>{formatCurrency(estimatedTotal)}</strong>
             </div>
           )}
           <button
             onClick={onReserve}
-            className="mt-4 w-full rounded-xl bg-[#0b6871] py-3 text-sm font-bold text-white"
+            className="restblu-primary-button mt-5 w-full"
           >
-            Reservar y generar pase
+            Continuar con mi reserva <ArrowRight aria-hidden="true" size={17} />
           </button>
-          <p className="mt-3 text-center text-xs text-[#718b93]">
-            Pago seguro con Webpay. Recibirás tu QR de acceso al confirmar.
+          <p className="mt-3 text-center text-[13px] leading-5 text-[#55727a]">
+            Primero revisas tus datos. Luego continúas al pago con Webpay.
           </p>
           <div className="mt-5 space-y-3 border-t border-[#e5efed] pt-5 text-sm text-[#55727a]">
             <p className="flex gap-2">
               <ShieldCheck className="size-4 text-[#0b8e92]" />
-              Propiedad y anfitrión verificados
+              Fechas y disponibilidad del alojamiento
             </p>
             <p className="flex gap-2">
               <QrCode className="size-4 text-[#0b8e92]" />
-              Pase digital y acceso seguro
+              Pase digital con el pago confirmado
             </p>
             <p className="flex gap-2">
               <MessageSquareMore className="size-4 text-[#0b8e92]" />
-              Soporte RestBlu 24/7
+              Consulta tus dudas con Blu
             </p>
           </div>
         </aside>
@@ -1893,6 +1892,7 @@ function BookingDialog({
     documentId: string;
   }) => Promise<void>;
 }) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const [guestName, setGuestName] = useState(profile?.name || '');
   const email = accountEmail;
   const [phone, setPhone] = useState(profile?.phone || '');
@@ -1905,13 +1905,21 @@ function BookingDialog({
   const nights = getNightCount(search.checkIn, search.checkOut);
   const total = nights * priceToNumber(property.price);
   const inputClass =
-    'mt-1.5 w-full rounded-xl border border-[#d5e5e3] bg-white px-3 py-2.5 text-sm outline-none transition focus:border-[#0b8e92] focus:ring-2 focus:ring-[#b9ebe5]';
+    'mt-2 min-h-12 w-full rounded-lg border border-[#c9dbdf] bg-white px-3 py-3 text-base font-normal outline-none transition-colors focus:border-[#0b8e92] focus:ring-2 focus:ring-[#b9ebe5]';
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    dialog?.showModal();
+    return () => dialog?.close();
+  }, []);
 
   return (
     <dialog
-      open
+      ref={dialogRef}
+      aria-modal="true"
       aria-labelledby="booking-title"
-      className="fixed inset-0 z-50 m-0 grid h-full max-h-none w-full max-w-none place-items-center overflow-y-auto bg-[#082b38]/65 p-5 backdrop-blur-sm"
+      onCancel={(event) => { event.preventDefault(); if (!submitting) onClose(); }}
+      className="restblu-booking-overlay fixed inset-0 z-50 m-0 h-full max-h-none w-full max-w-none overflow-y-auto bg-[#082b38]/65 p-4 sm:p-8"
     >
       <form
         onSubmit={async (event) => {
@@ -1931,47 +1939,48 @@ function BookingDialog({
             setSubmitting(false);
           }
         }}
-        className="w-full max-w-2xl overflow-hidden rounded-3xl bg-[#f8fbfa] shadow-2xl"
+        className="restblu-booking-sheet mx-auto w-full max-w-2xl overflow-hidden bg-white"
       >
-        <div className="flex items-start justify-between gap-4 bg-[#103d50] px-6 py-5 text-white">
+        <div className="flex items-start justify-between gap-4 px-6 pb-0 pt-6 sm:px-8 sm:pt-8">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[.16em] text-[#70e1d5]">
-              CONFIRMAR RESERVA
-            </p>
-            <h2 id="booking-title" className="mt-1 text-2xl font-bold">
-              Completa los datos del huésped
+            <h2 id="booking-title" className="restblu-display text-3xl tracking-tight">
+              Revisa tu reserva.
             </h2>
+            <p className="mt-2 text-sm leading-6 text-[#55727a]">Un último vistazo antes de continuar al pago.</p>
           </div>
           <button
             type="button"
             aria-label="Cerrar formulario de reserva"
             onClick={onClose}
-            className="rounded-xl bg-white/10 p-2 hover:bg-white/20"
+            disabled={submitting}
+            className="restblu-icon-button shrink-0 disabled:opacity-40"
           >
             <X size={20} />
           </button>
         </div>
 
-        <div className="p-6">
-          <div className="grid gap-3 rounded-2xl border border-[#d8e8e5] bg-white p-4 sm:grid-cols-[1fr_auto] sm:items-center">
+        <div className="p-6 sm:px-8 sm:pb-8">
+          <ol className="restblu-booking-progress" aria-label="Proceso de reserva"><li>Tu estadía</li><li aria-current="step">Tus datos</li><li>Pago</li></ol>
+          <div className="restblu-booking-summary grid gap-4 sm:grid-cols-[1fr_auto] sm:items-center">
             <div>
-              <p className="font-bold">{property.name}</p>
-              <p className="mt-1 text-sm text-[#66818a]">{property.place}</p>
-              <p className="mt-2 text-xs font-semibold text-[#0b7d82]">
+              <p className="text-lg font-semibold">{property.name}</p>
+              <p className="mt-1 text-sm text-[#55727a]">{property.place}</p>
+              <p className="mt-2 text-sm font-medium leading-6 text-[#0b6871]">
                 {formatDate(search.checkIn)} → {formatDate(search.checkOut)} ·{' '}
                 {search.guests} {search.guests === 1 ? 'huésped' : 'huéspedes'}
               </p>
             </div>
             <div className="text-left sm:text-right">
-              <p className="text-xs text-[#718b93]">Total referencial</p>
-              <p className="text-xl font-bold">{formatCurrency(total)}</p>
-              <p className="text-xs text-[#718b93]">
+              <p className="text-[13px] text-[#55727a]">Total referencial</p>
+              <p className="text-2xl font-semibold tabular-nums">{formatCurrency(total)}</p>
+              <p className="text-[13px] text-[#55727a]">
                 {nights} {nights === 1 ? 'noche' : 'noches'}
               </p>
             </div>
           </div>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <fieldset className="mt-6 grid gap-5 sm:grid-cols-2">
+            <legend className="mb-4 text-base font-semibold">Datos del huésped</legend>
             <label className="text-sm font-bold text-[#274b56]">
               Nombre completo
               <span className="relative block">
@@ -2008,7 +2017,7 @@ function BookingDialog({
               />
               <span
                 id="rut-help"
-                className={`mt-1 block text-xs font-medium ${rutTouched && !rutValid ? 'text-red-600' : 'text-[#718b93]'}`}
+                className={`mt-1 block text-xs font-medium ${rutTouched && !rutValid ? 'text-red-600' : 'text-[#55727a]'}`}
               >
                 {rutTouched && !rutValid
                   ? 'Ingresa un RUT chileno válido.'
@@ -2046,14 +2055,13 @@ function BookingDialog({
                 />
               </span>
             </label>
-          </div>
+          </fieldset>
 
-          <div className="mt-5 flex gap-3 rounded-2xl bg-[#e8f6f3] p-4 text-sm leading-6 text-[#3f6870]">
+          <div className="mt-5 flex gap-3 rounded-lg bg-[#edf5fa] p-4 text-sm leading-6 text-[#3f6870]">
             <ShieldCheck className="mt-0.5 size-5 shrink-0 text-[#07888d]" />
             <p>
-              Al continuar se guardará la reserva en tu cuenta y te llevaremos a la sección de pago.
-              Tu correo ya está verificado. El PDF y el QR de acceso sólo se habilitarán
-              cuando se apruebe el pago con Webpay.
+              Guardaremos la reserva en tu cuenta. El comprobante y el pase digital
+              estarán disponibles cuando Webpay confirme el pago.
             </p>
           </div>
 
@@ -2067,16 +2075,17 @@ function BookingDialog({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-[#ccdfdc] px-5 py-3 text-sm font-bold text-[#496b74]"
+              disabled={submitting}
+              className="min-h-12 rounded-lg px-5 py-3 text-sm font-semibold text-[#496b74] hover:bg-[#edf5fa] disabled:opacity-40"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-xl bg-[#0b6871] px-5 py-3 text-sm font-bold text-white hover:bg-[#07565d] disabled:cursor-wait disabled:opacity-60"
+              className="restblu-primary-button disabled:cursor-wait disabled:opacity-60"
             >
-              {submitting ? 'Preparando pago…' : `Pagar ${formatCurrency(total)}`}
+              {submitting ? 'Preparando pago…' : `Continuar al pago · ${formatCurrency(total)}`}
             </button>
           </div>
         </div>
